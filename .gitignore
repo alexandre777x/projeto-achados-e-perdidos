@@ -16,9 +16,11 @@ data/*
 *.db
 *.sqlite
 
-# Fotos enviadas pelos usuários
+# Fotos enviadas pelos usuários e provas de posse
 uploads/*
 !uploads/.gitkeep
+provas/*
+!provas/.gitkeep
 
 # Testes e build
 coverage/

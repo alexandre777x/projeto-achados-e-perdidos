@@ -1,7 +1,11 @@
-// Tabela: usuario. Consultas SQL do cadastro e do login (RF01).
-// Exemplo de uso do banco:
-//   const db = require('../database/connection');
-//   db.prepare('SELECT * FROM usuario WHERE email = ?').get(email);
-//
-// A implementar: buscarPorEmail(email), criar({ nome, email, senhaHash, perfil }).
-module.exports = {};
+// Tabela: usuario. Consultas SQL do cadastro, do login (RF01) e da troca de senha (RF01.6).
+const db = require('../database/connection');
+
+module.exports = {
+  // O e-mail é comparado sem diferenciar maiúsculas de minúsculas.
+  buscarPorEmail(email) {
+    return db.prepare('SELECT * FROM usuario WHERE email = ? COLLATE NOCASE').get(email);
+  },
+
+  // A implementar (RF01.1): criar({ nome, email, senhaHash, perfil }).
+};

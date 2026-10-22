@@ -5,7 +5,7 @@ const controller = require('../controllers/reivindicacoes.controller');
 
 const router = Router();
 
-router.post('/', exigirLogin, controller.abrir); // RF04.1, RF04.2, RF04.6
+router.post('/', exigirLogin, controller.abrir); // RF04.1, RF04.2 (com provas de posse), RF04.6
 router.get('/minhas', exigirLogin, controller.listarMinhas); // RF04.7
 router.get('/', exigirAdmin, controller.listarAbertas); // fila da administração
 router.get('/:id/mensagens', exigirLogin, controller.listarMensagens); // RF04.3

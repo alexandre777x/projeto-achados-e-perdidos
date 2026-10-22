@@ -287,6 +287,40 @@ button:hover,
   color: var(--grafite);
 }
 
+/* Formulário de filtros em linha (relatórios e busca) */
+.filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0 12px;
+}
+
+.filtros > div {
+  flex: 1 1 140px;
+}
+
+/* Tabelas: rolam por dentro do cartão em telas estreitas (RNF02) */
+.tabela-rolagem {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+th,
+td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--cinza-claro);
+}
+
+th {
+  color: var(--bordo);
+}
+
 .erro {
   color: var(--perigo);
 }

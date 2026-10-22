@@ -57,6 +57,15 @@ CREATE UNIQUE INDEX uq_reiv_aberta ON reivindicacao (item_id, reivindicante_id) 
 -- no máximo uma reivindicação aprovada por item (RN02)
 CREATE UNIQUE INDEX uq_reiv_aprovada ON reivindicacao (item_id) WHERE status = 'APROVADA';
 
+-- Arquivos que o reivindicante anexa para provar que é o dono (RF04.2): nota fiscal, foto antiga etc.
+-- Ficam na pasta privada provas/, que NÃO é servida publicamente (RNF09).
+CREATE TABLE prova_posse (
+    id               INTEGER PRIMARY KEY AUTOINCREMENT,
+    caminho          TEXT NOT NULL,
+    nome_original    TEXT NOT NULL,
+    reivindicacao_id INTEGER NOT NULL REFERENCES reivindicacao(id) ON DELETE CASCADE
+);
+
 CREATE TABLE mensagem (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     texto            TEXT NOT NULL CHECK (length(texto) BETWEEN 1 AND 1000),
@@ -80,4 +89,13 @@ CREATE TABLE historico_status (
     data_hora       TEXT NOT NULL DEFAULT (datetime('now')),
     item_id         INTEGER NOT NULL REFERENCES item(id),
     usuario_id      INTEGER NOT NULL REFERENCES usuario(id)
+);
+
+-- Pedidos de troca de senha (RF01.6). Guarda só o hash do token; o token puro vai apenas no e-mail.
+CREATE TABLE recuperacao_senha (
+    id         INTEGER PRIMARY KEY AUTOINCREMENT,
+    token_hash TEXT NOT NULL UNIQUE,
+    expira_em  TEXT NOT NULL,
+    usado      INTEGER NOT NULL DEFAULT 0 CHECK (usado IN (0,1)),
+    usuario_id INTEGER NOT NULL REFERENCES usuario(id)
 );

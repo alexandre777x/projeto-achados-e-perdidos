@@ -21,10 +21,102 @@
   <main>
     <h1>Administração</h1>
     <div class="cartao">
-      <p class="suave">Página a construir (RF02.6, RF04.4 e RF05).</p>
+      <p class="suave">Página a construir (RF02.6, RF04.4 e RF05.1).</p>
     </div>
+
+    <section class="cartao">
+      <h2>Relatório de devoluções</h2>
+      <form id="form-relatorio" class="filtros">
+        <div>
+          <label for="de">De</label>
+          <input type="date" id="de" name="de">
+        </div>
+        <div>
+          <label for="ate">Até</label>
+          <input type="date" id="ate" name="ate">
+        </div>
+        <button type="submit">Gerar relatório</button>
+        <a class="botao botao-claro" id="exportar" href="/api/devolucoes/relatorio.csv">Exportar CSV</a>
+      </form>
+      <p id="aviso-relatorio" role="status"></p>
+      <div id="relatorio" hidden>
+        <p><strong id="resumo"></strong></p>
+        <h3>Itens devolvidos</h3>
+        <div class="tabela-rolagem"><table id="tabela-devolvidos"></table></div>
+        <h3>Itens ainda sob custódia</h3>
+        <div class="tabela-rolagem"><table id="tabela-disponiveis"></table></div>
+      </div>
+    </section>
   </main>
 
   <script src="/js/api.js"></script>
+  <script>
+    // RF05.4 e RF05.5: relatório por período
+    const formRelatorio = document.getElementById('form-relatorio');
+    const avisoRelatorio = document.getElementById('aviso-relatorio');
+    const situacoes = { DISPONIVEL: 'Disponível', EM_REIVINDICACAO: 'Em reivindicação' };
+
+    function periodo() {
+      const p = new URLSearchParams();
+      if (formRelatorio.de.value) p.set('de', formRelatorio.de.value);
+      if (formRelatorio.ate.value) p.set('ate', formRelatorio.ate.value);
+      return p.toString();
+    }
+
+    function preencherTabela(tabela, colunas, linhas) {
+      tabela.replaceChildren();
+      const cabecalho = tabela.createTHead().insertRow();
+      for (const [titulo] of colunas) {
+        const th = document.createElement('th');
+        th.textContent = titulo;
+        cabecalho.append(th);
+      }
+      const corpo = tabela.createTBody();
+      if (linhas.length === 0) {
+        const celula = corpo.insertRow().insertCell();
+        celula.colSpan = colunas.length;
+        celula.textContent = 'Nenhum item neste período.';
+        celula.className = 'suave';
+      }
+      for (const linha of linhas) {
+        const tr = corpo.insertRow();
+        for (const [, pegar] of colunas) tr.insertCell().textContent = pegar(linha) ?? '';
+      }
+    }
+
+    formRelatorio.addEventListener('input', () => {
+      document.getElementById('exportar').href = '/api/devolucoes/relatorio.csv?' + periodo();
+    });
+
+    formRelatorio.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      avisoRelatorio.textContent = '';
+      avisoRelatorio.className = '';
+      try {
+        const r = await api('/devolucoes/relatorio?' + periodo());
+        document.getElementById('resumo').textContent =
+          `${r.devolvidos.length} devolvido(s), ${r.disponiveis.length} ainda sob custódia. ` +
+          `Tempo médio até a devolução: ${r.tempoMedioDias === null ? '—' : r.tempoMedioDias + ' dia(s)'}.`;
+        preencherTabela(document.getElementById('tabela-devolvidos'), [
+          ['Item', (i) => i.titulo],
+          ['Categoria', (i) => i.categoria],
+          ['Local', (i) => i.local],
+          ['Devolvido em', (i) => i.data_devolucao],
+          ['Dias', (i) => i.dias_ate_devolucao],
+        ], r.devolvidos);
+        preencherTabela(document.getElementById('tabela-disponiveis'), [
+          ['Item', (i) => i.titulo],
+          ['Categoria', (i) => i.categoria],
+          ['Local', (i) => i.local],
+          ['Registrado em', (i) => i.data_registro],
+          ['Situação', (i) => situacoes[i.status]],
+        ], r.disponiveis);
+        document.getElementById('relatorio').hidden = false;
+      } catch (erro) {
+        avisoRelatorio.textContent = erro.message;
+        avisoRelatorio.className = 'erro';
+      }
+    });
+  </script>
 </body>
 </html>
