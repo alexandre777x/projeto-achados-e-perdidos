@@ -1,0 +1,106 @@
+/* Estilo base do CampusLost. Mobile primeiro (RNF02): funciona de 360 px até telas grandes. */
+:root {
+  --azul-escuro: #12263a;
+  --ambar: #e9a23b;
+  --fundo: #f6f4ee;
+  --cartao: #ffffff;
+  --borda: #d9d4c7;
+  --texto-suave: #4a5b6a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: Arial, Helvetica, sans-serif;
+  background: var(--fundo);
+  color: var(--azul-escuro);
+  line-height: 1.5;
+}
+
+header {
+  background: var(--azul-escuro);
+  color: var(--fundo);
+  padding: 12px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 24px;
+}
+
+header .marca {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--ambar);
+  text-decoration: none;
+}
+
+header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+header nav a {
+  color: var(--fundo);
+  text-decoration: none;
+}
+
+header nav a:hover {
+  text-decoration: underline;
+}
+
+main {
+  max-width: 960px;
+  margin: 0 auto;
+  padding: 24px 16px;
+}
+
+.cartao {
+  background: var(--cartao);
+  border: 1px solid var(--borda);
+  border-radius: 12px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+label {
+  display: block;
+  margin: 12px 0 4px;
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  padding: 10px;
+  font-size: 1rem;
+  border: 1px solid var(--borda);
+  border-radius: 8px;
+}
+
+button,
+.botao {
+  display: inline-block;
+  margin-top: 16px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 700;
+  background: var(--ambar);
+  color: var(--azul-escuro);
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.erro {
+  color: #b3261e;
+}
+
+.suave {
+  color: var(--texto-suave);
+}
