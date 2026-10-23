@@ -90,7 +90,7 @@ As classes de `module/` carregam as regras de negócio (validações, ciclo de v
 | RF01.1, RF01.2, RF01.5 Cadastro | `AutenticacaoController` | `UsuarioRepository` | `Usuario` | `cadastro.html` |
 | RF01.6 Recuperar senha ✅ | `AutenticacaoController` | `RecuperacaoSenhaService`, `RecuperacaoSenhaRepository`, `EmailService` | `Usuario` | `esqueci-senha.html`, `redefinir-senha.html` |
 | RF02 Registro de item | `ItemController` | `ItemRepository` | `Item`, `Foto`, `HistoricoStatus` | `novo-item.html` |
-| RF02.3 Categorias e locais | `ReferenciaController` | `CategoriaRepository`, `LocalRepository` | `Categoria`, `Local` | `novo-item.html`, `itens.html` |
+| RF02.3 Categorias e locais ✅ | `ReferenciaController` | `CategoriaRepository`, `LocalRepository` | `Categoria`, `Local` | `admin.html`, `novo-item.html`, `itens.html` |
 | RF03 Busca | `ItemController` | `ItemRepository` | `Item` | `itens.html`, `item.html` |
 | RF04 Reivindicação | `ReivindicacaoController` | `ReivindicacaoRepository` | `Reivindicacao`, `ProvaPosse`, `Mensagem` | `item.html`, `minhas-reivindicacoes.html` |
 | RF05.1 a RF05.3 Devolução | `DevolucaoController` | `DevolucaoRepository` | `Devolucao` | `admin.html` |

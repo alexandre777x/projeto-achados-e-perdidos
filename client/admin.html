@@ -25,6 +25,37 @@
     </div>
 
     <section class="cartao">
+      <h2>Categorias e locais</h2>
+      <p class="suave">São as opções que aparecem no registro e na busca de itens.</p>
+      <div class="acoes">
+        <div>
+          <h3>Categorias</h3>
+          <ul id="lista-categorias"></ul>
+          <form id="form-categoria" class="filtros" novalidate>
+            <div>
+              <label for="nova-categoria">Nova categoria</label>
+              <input type="text" id="nova-categoria" name="nome" required minlength="2" maxlength="80">
+            </div>
+            <button type="submit">Adicionar</button>
+          </form>
+          <p id="aviso-categoria" role="status"></p>
+        </div>
+        <div>
+          <h3>Locais</h3>
+          <ul id="lista-locais"></ul>
+          <form id="form-local" class="filtros" novalidate>
+            <div>
+              <label for="novo-local">Novo local</label>
+              <input type="text" id="novo-local" name="nome" required minlength="2" maxlength="80">
+            </div>
+            <button type="submit">Adicionar</button>
+          </form>
+          <p id="aviso-local" role="status"></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cartao">
       <h2>Relatório de devoluções</h2>
       <form id="form-relatorio" class="filtros">
         <div>
@@ -52,6 +83,45 @@
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
   <script>
+    // RF02.3: listas de categorias e locais mantidas pelo administrador
+    function configurarLista(rota, idLista, idForm, idAviso, mensagemCriado) {
+      const lista = document.getElementById(idLista);
+      const form = document.getElementById(idForm);
+      const aviso = document.getElementById(idAviso);
+
+      async function carregar() {
+        const itens = await api(rota);
+        lista.replaceChildren(...itens.map((i) => {
+          const li = document.createElement('li');
+          li.textContent = i.nome;
+          return li;
+        }));
+      }
+
+      form.addEventListener('submit', async (evento) => {
+        evento.preventDefault();
+        aviso.textContent = '';
+        aviso.className = '';
+        try {
+          const criado = await api(rota, { method: 'POST', body: { nome: form.nome.value.trim() } });
+          form.reset();
+          aviso.textContent = `${mensagemCriado}: ${criado.nome}.`;
+          await carregar();
+        } catch (erro) {
+          aviso.textContent = erro.message;
+          aviso.className = 'erro';
+        }
+      });
+
+      carregar().catch((erro) => {
+        aviso.textContent = erro.message;
+        aviso.className = 'erro';
+      });
+    }
+
+    configurarLista('/referencias/categorias', 'lista-categorias', 'form-categoria', 'aviso-categoria', 'Categoria adicionada');
+    configurarLista('/referencias/locais', 'lista-locais', 'form-local', 'aviso-local', 'Local adicionado');
+
     // RF05.4 e RF05.5: relatório por período
     const formRelatorio = document.getElementById('form-relatorio');
     const avisoRelatorio = document.getElementById('aviso-relatorio');
