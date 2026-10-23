@@ -33,9 +33,11 @@ after(() => servidor.close());
 class Navegador {
   private cookie = "";
 
+  /** Não segue redirecionamentos: os testes precisam ver o 302 para o login, não a página de login. */
   async pedir(caminho: string, opcoes: RequestInit = {}) {
     const resposta = await fetch(base + caminho, {
       ...opcoes,
+      redirect: "manual",
       headers: { ...(opcoes.headers as Record<string, string>), cookie: this.cookie },
     });
     const novo = resposta.headers.get("set-cookie");
@@ -118,7 +120,8 @@ describe("rotas básicas e tratamento de erros", () => {
       throw new Error("detalhe interno secreto");
     };
     try {
-      const r = await new Navegador().pedir("/api/itens");
+      const { n } = await logado(PerfilUsuario.ALUNO);
+      const r = await n.pedir("/api/itens");
       assert.equal(r.status, 500);
       assert.equal(r.corpo.erro, "Erro interno do servidor.");
       assert.ok(!JSON.stringify(r.corpo).includes("secreto"));
@@ -128,9 +131,9 @@ describe("rotas básicas e tratamento de erros", () => {
     }
   });
 
-  test("leituras públicas: busca, detalhe e listas, sem login", async () => {
+  test("leituras: busca, detalhe e listas, para quem entrou", async () => {
     const id = criarItem({ registradoPor: autor.id, titulo: "Guarda-chuva listrado" });
-    const n = new Navegador();
+    const { n } = await logado(PerfilUsuario.ALUNO);
     const busca = await n.pedir("/api/itens?q=listrado&limite=5");
     assert.equal(busca.status, 200);
     assert.deepEqual((busca.corpo as { id: number }[]).map((i) => i.id), [id]);
@@ -223,13 +226,16 @@ describe("UploadMiddleware: fotos dos itens (RF02.2)", () => {
     assert.equal(arquivosEm(Configuracao.pastaUploads), antes);
   });
 
-  test("foto válida: grava com nome aleatório e fica pública", async () => {
+  test("foto válida: grava com nome aleatório; só quem entrou consegue abrir", async () => {
     const { n } = await logado(PerfilUsuario.ALUNO);
     const r = await n.pedir("/api/itens", { method: "POST", body: formularioItem([[PNG, "image/png", "minha foto.png"]]) });
     assert.equal(r.status, 201);
     const url = (r.corpo.fotos as { url: string }[])[0].url;
     assert.match(url, /^\/uploads\/[0-9a-f]{32}\.png$/);
-    assert.equal((await new Navegador().pedir(url)).status, 200);
+    assert.equal((await n.pedir(url)).status, 200);
+    const anonimo = await new Navegador().pedir(url);
+    assert.equal(anonimo.status, 302);
+    assert.match(anonimo.resposta.headers.get("location") ?? "", /^\/login\.html/);
   });
 
   const recusas: [string, [Buffer, string, string][], RegExp][] = [
@@ -301,11 +307,14 @@ describe("rotas de itens: ids e ordem das rotas", () => {
     assert.equal((await n.pedir(`/api/itens/${id}/recebimento`, { method: "PATCH" })).corpo.status, StatusItem.DISPONIVEL);
     const editado = await n.json(`/api/itens/${id}`, "PUT", { titulo: "Novo título", descricao: "x", dataAchado: "2026-10-01", categoriaId: 2, localId: 2 });
     assert.equal(editado.corpo.titulo, "Novo título");
-    assert.equal((await new Navegador().pedir(`/api/itens/${id}`)).corpo.categoria, "Documentos");
+    assert.equal((await n.pedir(`/api/itens/${id}`)).corpo.categoria, "Documentos");
   });
 
-  test("categorias: listar sem login e criar só como admin", async () => {
-    assert.equal((await new Navegador().pedir("/api/referencias/locais")).status, 200);
+  test("categorias: listar exige login; criar, só administrador", async () => {
+    assert.equal((await new Navegador().pedir("/api/referencias/locais")).status, 401);
+    const { n: aluno } = await logado(PerfilUsuario.ALUNO);
+    assert.equal((await aluno.pedir("/api/referencias/locais")).status, 200);
+    assert.equal((await aluno.json("/api/referencias/locais", "POST", { nome: "Quadra" })).status, 403);
     const { n } = await logado(PerfilUsuario.ADMINISTRADOR);
     assert.equal((await n.json("/api/referencias/categorias", "POST", { nome: "Livros" })).status, 201);
     assert.equal((await n.json("/api/referencias/locais", "POST", { nome: "Ginásio" })).status, 201);
@@ -344,11 +353,12 @@ describe("reivindicação pela HTTP: provas privadas (RF04.2, RNF09)", () => {
     assert.equal((await new Navegador().pedir(`/api/reivindicacoes/${id}/provas/${prova.id}`)).status, 401);
   });
 
-  test("o arquivo não é acessível por /uploads nem por /provas", async () => {
-    await abrirComProva();
+  test("o arquivo não é acessível por /uploads nem por /provas, nem para quem entrou", async () => {
+    const { n } = await abrirComProva();
     for (const nome of fs.readdirSync(Configuracao.pastaProvas)) {
-      assert.equal((await new Navegador().pedir(`/uploads/${nome}`)).status, 404);
-      assert.equal((await new Navegador().pedir(`/provas/${nome}`)).status, 404);
+      assert.equal((await n.pedir(`/uploads/${nome}`)).status, 404);
+      assert.equal((await n.pedir(`/provas/${nome}`)).status, 404);
+      assert.equal((await new Navegador().pedir(`/uploads/${nome}`)).status, 302, "sem login, vai para o login");
     }
   });
 
@@ -422,5 +432,91 @@ describe("fluxo completo pela HTTP: reivindicar, conversar, decidir, devolver e 
     const r = await admin.json(`/api/reivindicacoes/${id}/rejeitar`, "PATCH", { motivo: "Não confere" });
     assert.equal(r.corpo.status, "REJEITADA");
     assert.equal((await dono.pedir(`/api/reivindicacoes/abc`)).status, 404);
+  });
+});
+
+describe("login obrigatório: o site inteiro exige conta", () => {
+  const paraLogin = (r: { status: number; resposta: Response }) => {
+    assert.equal(r.status, 302);
+    return r.resposta.headers.get("location") ?? "";
+  };
+
+  test("abrir o site sem login cai no login", async () => {
+    assert.equal(paraLogin(await new Navegador().pedir("/")), "/login.html");
+  });
+
+  test("página interna sem login: vai para o login e guarda para onde voltar", async () => {
+    for (const pagina of ["/index.html", "/itens.html", "/item.html", "/novo-item.html", "/minhas-reivindicacoes.html", "/reivindicacao.html", "/admin.html"]) {
+      assert.match(paraLogin(await new Navegador().pedir(pagina)), /^\/login\.html\?voltar=/, pagina);
+    }
+    assert.equal(
+      paraLogin(await new Navegador().pedir("/itens.html?q=chave")),
+      "/login.html?voltar=%2Fitens.html%3Fq%3Dchave"
+    );
+  });
+
+  test("páginas de acesso e seus arquivos abrem sem login", async () => {
+    for (const caminho of ["/login.html", "/cadastro.html", "/esqueci-senha.html", "/redefinir-senha.html", "/css/style.css", "/js/api.js", "/img/undb.png"]) {
+      assert.equal((await new Navegador().pedir(caminho)).status, 200, caminho);
+    }
+  });
+
+  test("tentativas de contornar pelo endereço não abrem a página", async () => {
+    const tentativas = [
+      "/ITENS.HTML",
+      "/Admin.html",
+      "/itens%2Ehtml",
+      "/css/..%2Fitens.html",
+      "/css/..%2fadmin.html",
+      "/css/%2E%2E%2Fitens.html",
+      "/js/..%5Citens.html",
+      "/img/../admin.html",
+      "/js/%2e%2e/admin.html",
+      "/api/..%2Fadmin.html",
+      "/uploads/..%2F..%2Fserver%2F.env",
+      "/css/%E0%A4%A",
+    ];
+    for (const caminho of tentativas) {
+      const r = await new Navegador().pedir(caminho);
+      assert.notEqual(r.status, 200, caminho);
+      assert.ok(!String(r.corpo).includes("<header>"), `${caminho} não pode devolver uma página interna`);
+    }
+  });
+
+  test("a API de leitura também exige login", async () => {
+    const id = criarItem({ registradoPor: autor.id });
+    for (const rota of ["/api/itens", `/api/itens/${id}`, "/api/referencias/categorias", "/api/referencias/locais"]) {
+      assert.equal((await new Navegador().pedir(rota)).status, 401, rota);
+    }
+  });
+
+  test("continuam abertas: saúde, login, cadastro e recuperação de senha", async () => {
+    assert.equal((await new Navegador().pedir("/api/saude")).status, 200);
+    assert.equal((await new Navegador().json("/api/auth/login", "POST", {})).status, 400, "chega na rota (não é 401)");
+    assert.equal((await new Navegador().json("/api/auth/recuperar-senha", "POST", { email: "x@undb.edu.br" })).status, 200);
+  });
+
+  test("quem entrou abre o início; se abrir o login, vai para o início", async () => {
+    const { n } = await logado(PerfilUsuario.ALUNO);
+    const inicio = await n.pedir("/");
+    assert.equal(inicio.status, 200);
+    assert.match(String(inicio.corpo), /<header>/);
+    assert.equal(paraLogin(await n.pedir("/login.html")), "/");
+  });
+
+  test("quem entrou ainda abre o cadastro (o administrador cria contas por ali)", async () => {
+    const { n } = await logado(PerfilUsuario.ADMINISTRADOR);
+    assert.equal((await n.pedir("/cadastro.html")).status, 200);
+  });
+
+  test("depois de sair, as páginas voltam a pedir login", async () => {
+    const { n } = await logado(PerfilUsuario.ALUNO);
+    assert.equal((await n.pedir("/itens.html")).status, 200);
+    await n.pedir("/api/auth/logout", { method: "POST" });
+    assert.equal((await n.pedir("/itens.html")).status, 302);
+  });
+
+  test("POST para uma página, sem login: vai para o login sem 'voltar'", async () => {
+    assert.equal(paraLogin(await new Navegador().pedir("/itens.html", { method: "POST" })), "/login.html");
   });
 });

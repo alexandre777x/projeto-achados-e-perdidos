@@ -75,14 +75,14 @@ header .marca {
   text-decoration: none;
 }
 
+/* Ícone da UNDB ao lado do nome, em todas as páginas internas */
 header .marca::before {
   content: "";
-  width: 32px;
-  height: 32px;
+  width: 36px;
+  height: 36px;
   border-radius: 8px;
-  background: #fff
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238e1748' stroke-width='2.5' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-4-4'/%3E%3C/svg%3E")
-    center / 18px no-repeat;
+  background: url("/img/undb.png") center / cover no-repeat;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
 }
 
 header nav {
@@ -286,6 +286,18 @@ button:hover,
   margin: 0;
 }
 
+/* Quadro no lugar da foto, para itens sem foto */
+div.item-foto {
+  display: grid;
+  place-items: center;
+}
+
+div.item-foto::after {
+  content: "Sem foto";
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
 .item-foto {
   display: block;
   width: 100%;
@@ -459,5 +471,411 @@ th {
 @media (max-width: 480px) {
   .acoes {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   Páginas de acesso (login, criar conta, recuperar senha)
+   Visual inspirado no login do UNDB Classroom: fundo roxo com manchas em
+   degradê e setas, e um cartão claro dividido em duas colunas.
+   ========================================================================== */
+.pagina-acesso {
+  --roxo: #5800b4;
+  --roxo-escuro: #43008a;
+  --verde-agua: #22cfc0;
+  --magenta-vivo: #e3258f;
+  --fundo-cartao: #f4fbfb;
+
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  place-items: center;
+  padding: 32px 16px;
+  background: var(--roxo);
+  font-family: "Poppins", "Segoe UI", system-ui, sans-serif;
+  overflow-x: hidden;
+}
+
+.pagina-acesso a {
+  color: var(--roxo);
+}
+
+/* Fundo decorativo: fica atrás de tudo e não recebe cliques */
+.fundo-acesso {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.mancha,
+.bolinha {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.mancha-1 {
+  width: 560px;
+  height: 480px;
+  left: -170px;
+  top: -150px;
+  border-radius: 46% 54% 60% 40% / 52% 38% 62% 48%;
+  background: linear-gradient(140deg, #3f7cff 0%, #b98fe6 50%, #f6a5c9 100%);
+}
+
+.mancha-2 {
+  width: 620px;
+  height: 560px;
+  left: -180px;
+  bottom: -330px;
+  background: linear-gradient(170deg, #e646b0 0%, #b23fcf 100%);
+}
+
+.mancha-3 {
+  width: 320px;
+  height: 320px;
+  right: -140px;
+  top: -150px;
+  background: linear-gradient(220deg, #f6a5c9, #c25ad3);
+}
+
+/* Fica à esquerda do cartão, sem ficar escondida atrás dele */
+.bolinha-1 {
+  width: 62px;
+  height: 62px;
+  left: calc(50% - 565px);
+  top: 28%;
+  background: #f49bc5;
+}
+
+.bolinha-2 {
+  width: 72px;
+  height: 72px;
+  right: 1%;
+  top: 34%;
+  background: #8e3bd0;
+}
+
+/* Setas ">>>" só com o contorno */
+.setas {
+  position: absolute;
+  width: 220px;
+  height: 120px;
+  fill: none;
+  stroke-width: 2.5;
+  stroke-linejoin: round;
+}
+
+.setas-1 {
+  left: 32%;
+  top: 14%;
+  stroke: #4aa3ff;
+}
+
+.setas-2 {
+  left: 15%;
+  top: 44%;
+  width: 260px;
+  height: 150px;
+  stroke: #d43fb1;
+}
+
+.setas-3 {
+  left: 31%;
+  bottom: 2%;
+  stroke: #4aa3ff;
+}
+
+.setas-4 {
+  right: 9%;
+  bottom: 3%;
+  stroke: #d43fb1;
+}
+
+/* Cartão principal */
+.acesso {
+  position: relative;
+  width: 100%;
+  max-width: 1010px;
+}
+
+.acesso-cartao {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  background: var(--fundo-cartao);
+  border-radius: 48px;
+  padding: 48px 56px;
+  box-shadow: 0 30px 70px rgba(25, 0, 60, 0.35);
+}
+
+.acesso-principal {
+  min-width: 0;
+  padding-right: 44px;
+}
+
+.acesso-lado {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 16px;
+  padding-left: 44px;
+  border-left: 1px solid #d9dde3;
+  text-align: center;
+  color: var(--grafite);
+}
+
+.acesso-lado h2 {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 500;
+}
+
+.acesso-lado p {
+  margin: 0;
+  color: var(--texto-suave);
+}
+
+/* Logotipo: "CampusLost" em verde-água e "Achados e Perdidos" em magenta, com um traço */
+.logo-acesso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  margin-bottom: 28px;
+  text-decoration: none;
+}
+
+.logo-acesso img {
+  width: 64px;
+  height: 64px;
+  border-radius: 14px;
+}
+
+.logo-nome {
+  display: block;
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--verde-agua);
+}
+
+.logo-sub {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 1.15rem;
+  color: var(--magenta-vivo);
+}
+
+.logo-sub::before {
+  content: "";
+  width: 40px;
+  height: 2px;
+  background: var(--magenta-vivo);
+}
+
+.acesso h1 {
+  margin: 0 0 4px;
+  font-size: 1.3rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.acesso .explicacao {
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--texto-suave);
+}
+
+/* Campos grandes e arredondados, como no Classroom */
+.pagina-acesso input,
+.pagina-acesso select {
+  padding: 14px 20px;
+  font-size: 1.05rem;
+  border: 1px solid #b9bec7;
+  border-radius: 10px;
+  background: #fff;
+}
+
+.pagina-acesso input:focus,
+.pagina-acesso select:focus {
+  border-color: var(--roxo);
+  box-shadow: 0 0 0 3px rgba(88, 0, 180, 0.15);
+}
+
+.pagina-acesso label {
+  margin: 14px 0 6px;
+  font-weight: 500;
+}
+
+/* No login, os rótulos ficam só para leitores de tela: o texto de dica faz o papel */
+.so-leitor {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.campo-login {
+  margin-top: 16px;
+}
+
+.pagina-acesso button,
+.pagina-acesso .botao {
+  width: 100%;
+  margin-top: 20px;
+  padding: 13px 20px;
+  font-size: 1.15rem;
+  font-weight: 500;
+  border-radius: 10px;
+  background: var(--roxo);
+  color: #fff;
+}
+
+.pagina-acesso button:hover,
+.pagina-acesso .botao:hover {
+  background: var(--roxo-escuro);
+}
+
+.pagina-acesso button:disabled {
+  opacity: 0.7;
+  cursor: wait;
+}
+
+/* Botão de contorno, para a ação secundária (ex.: "Criar conta" no login) */
+.pagina-acesso .botao-contorno {
+  margin-top: 0;
+  background: #fff;
+  color: var(--roxo);
+  border: 2px solid var(--roxo);
+}
+
+.pagina-acesso .botao-contorno:hover {
+  background: #f0e6fb;
+}
+
+.link-centro {
+  margin: 18px 0 0;
+  text-align: center;
+}
+
+.link-centro a {
+  text-decoration: none;
+}
+
+.link-centro a:hover {
+  text-decoration: underline;
+}
+
+/* Lista de vantagens no lado direito */
+.vantagens {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+  text-align: left;
+}
+
+.vantagens li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.vantagens li::before {
+  content: "";
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--verde-agua)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E")
+    center / 13px no-repeat;
+}
+
+.aviso-acesso {
+  margin: 14px 0 0;
+  text-align: center;
+}
+
+.aviso-acesso:empty {
+  display: none;
+}
+
+.rodape-acesso {
+  margin: 20px 0 0;
+  text-align: center;
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+/* Celular: uma coluna, cartão mais compacto e fundo mais discreto */
+@media (max-width: 760px) {
+  .acesso-cartao {
+    grid-template-columns: 1fr;
+    padding: 32px 24px;
+    border-radius: 32px;
+  }
+
+  .acesso-principal {
+    padding-right: 0;
+  }
+
+  .acesso-lado {
+    margin-top: 28px;
+    padding: 24px 0 0;
+    border-left: none;
+    border-top: 1px solid #d9dde3;
+  }
+
+  .logo-nome {
+    font-size: 2.1rem;
+  }
+
+  .logo-acesso img {
+    width: 52px;
+    height: 52px;
+  }
+
+  .setas-2,
+  .setas-3,
+  .bolinha-1 {
+    display: none;
+  }
+}
+
+/* Celulares estreitos (a partir de 360 px): logotipo e cartão mais compactos */
+@media (max-width: 420px) {
+  .acesso-cartao {
+    padding: 28px 18px;
+    border-radius: 26px;
+  }
+
+  .logo-acesso {
+    gap: 10px;
+  }
+
+  .logo-acesso img {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+  }
+
+  .logo-nome {
+    font-size: 1.75rem;
+  }
+
+  .logo-sub {
+    font-size: 0.95rem;
+  }
+
+  .logo-sub::before {
+    width: 22px;
   }
 }

@@ -4,34 +4,57 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Esqueci minha senha – CampusLost</title>
+  <link rel="icon" href="/img/undb.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body>
-  <header>
-    <a class="marca" href="/">CampusLost</a>
-    <nav>
-      <a href="/itens.html">Itens encontrados</a>
-      <a href="/novo-item.html">Registrar item</a>
-      <a href="/minhas-reivindicacoes.html">Minhas reivindicações</a>
-      <a href="/admin.html">Administração</a>
-      <a href="/login.html">Entrar</a>
-    </nav>
-  </header>
+<body class="pagina-acesso">
+  <div class="fundo-acesso" aria-hidden="true">
+    <div class="mancha mancha-1"></div>
+    <div class="mancha mancha-2"></div>
+    <div class="mancha mancha-3"></div>
+    <div class="bolinha bolinha-1"></div>
+    <div class="bolinha bolinha-2"></div>
+    <svg class="setas setas-1" viewBox="0 0 220 120"><polyline points="4,6 64,60 4,114"/><polyline points="74,6 134,60 74,114"/><polyline points="144,6 204,60 144,114"/></svg>
+    <svg class="setas setas-2" viewBox="0 0 220 120"><polyline points="4,6 64,60 4,114"/><polyline points="74,6 134,60 74,114"/><polyline points="144,6 204,60 144,114"/></svg>
+    <svg class="setas setas-3" viewBox="0 0 220 120"><polyline points="4,6 64,60 4,114"/><polyline points="74,6 134,60 74,114"/><polyline points="144,6 204,60 144,114"/></svg>
+    <svg class="setas setas-4" viewBox="0 0 220 120"><polyline points="4,6 64,60 4,114"/><polyline points="74,6 134,60 74,114"/><polyline points="144,6 204,60 144,114"/></svg>
+  </div>
 
-  <main>
-    <h1>Esqueci minha senha</h1>
-    <form class="cartao" id="formulario">
-      <p class="suave">Informe o e-mail da sua conta. Enviaremos um link para criar uma nova senha.</p>
-      <label for="email">E-mail institucional</label>
-      <input type="email" id="email" name="email" required autocomplete="email">
-      <button type="submit">Enviar link</button>
-      <p id="aviso" role="status"></p>
-    </form>
-    <p><a href="/login.html">Voltar para o login</a></p>
+  <main class="acesso">
+    <div class="acesso-cartao">
+      <form class="acesso-principal" id="formulario" novalidate>
+        <a class="logo-acesso" href="/login.html">
+          <img src="/img/undb.png" alt="UNDB">
+          <div>
+            <span class="logo-nome">CampusLost</span>
+            <span class="logo-sub">Achados e Perdidos</span>
+          </div>
+        </a>
+
+        <h1>Esqueci minha senha</h1>
+        <p class="explicacao">Informe o e-mail da sua conta. Enviaremos um link para criar uma nova senha.</p>
+
+        <label for="email" class="so-leitor">E-mail institucional</label>
+        <input class="campo-login" type="email" id="email" name="email" placeholder="E-mail institucional" required autocomplete="email" autofocus>
+
+        <p id="aviso" class="aviso-acesso" role="status"></p>
+        <button type="submit">Enviar link</button>
+      </form>
+
+      <aside class="acesso-lado">
+        <h2>Lembrou a senha?</h2>
+        <p>Volte para a tela de entrada.</p>
+        <a class="botao botao-contorno" href="/login.html">Entrar</a>
+        <p>Não chegou? Confira a caixa de spam. O link vale por 60 minutos.</p>
+      </aside>
+    </div>
+    <p class="rodape-acesso">Achados e Perdidos · UNDB</p>
   </main>
 
   <script src="/js/api.js"></script>
-  <script src="/js/menu.js"></script>
   <script>
     // RF01.6: pede o link de recuperação
     const formulario = document.getElementById('formulario');
@@ -39,15 +62,20 @@
 
     formulario.addEventListener('submit', async (evento) => {
       evento.preventDefault();
+      aviso.className = 'aviso-acesso';
+      if (!formulario.email.value.trim()) {
+        aviso.textContent = 'Informe o e-mail.';
+        aviso.className = 'aviso-acesso erro';
+        return;
+      }
       const botao = formulario.querySelector('button');
       botao.disabled = true;
-      aviso.className = '';
       try {
-        const d = await api('/auth/recuperar-senha', { method: 'POST', body: { email: formulario.email.value } });
+        const d = await api('/auth/recuperar-senha', { method: 'POST', body: { email: formulario.email.value.trim() } });
         aviso.textContent = d.mensagem;
       } catch (erro) {
         aviso.textContent = erro.message;
-        aviso.className = 'erro';
+        aviso.className = 'aviso-acesso erro';
       } finally {
         botao.disabled = false;
       }

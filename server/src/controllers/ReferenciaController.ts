@@ -4,7 +4,7 @@ import { Local } from "../module/Local";
 import { CategoriaRepository } from "../repositories/CategoriaRepository";
 import { LocalRepository } from "../repositories/LocalRepository";
 
-/** Listas de categorias e locais (RF02.3). Qualquer um consulta; só o administrador cria. */
+/** Listas de categorias e locais (RF02.3). Quem está logado consulta; só o administrador cria. */
 export class ReferenciaController {
   private readonly categoriaRepo = new CategoriaRepository();
   private readonly localRepo = new LocalRepository();

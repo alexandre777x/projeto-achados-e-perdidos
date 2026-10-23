@@ -88,8 +88,10 @@ export class App {
     );
   }
 
-  /** Front-end (HTML, CSS e JS) e fotos dos itens. As provas de posse NÃO são públicas. */
+  /** Front-end (HTML, CSS e JS) e fotos dos itens, só para quem entrou. As provas de posse nem passam por aqui. */
   private configurarArquivosEstaticos(): void {
+    // Antes dos arquivos: sem login, só as páginas de acesso abrem (o resto vai para o login)
+    this.app.use((req, res, next) => this.autenticacaoMiddleware.protegerPaginas(req, res, next));
     this.app.use(express.static(Configuracao.PASTA_CLIENT));
     this.app.use("/uploads", express.static(Configuracao.pastaUploads));
   }
@@ -121,10 +123,10 @@ export class App {
   /** RF02 e RF03 */
   private configurarRotasDeItens(): void {
     const c = this.itemController;
-    this.api.get("/itens", (req, res) => c.buscar(req, res));
+    this.api.get("/itens", this.exigirLogin, (req, res) => c.buscar(req, res));
     // Antes de /itens/:id, senão "aguardando-recebimento" seria lido como um id.
     this.api.get("/itens/aguardando-recebimento", this.exigirAdmin, (req, res) => c.listarAguardandoRecebimento(req, res));
-    this.api.get("/itens/:id", (req, res) => c.detalhar(req, res));
+    this.api.get("/itens/:id", this.exigirLogin, (req, res) => c.detalhar(req, res));
     // O login vem antes do upload: quem não entrou não chega a gravar arquivos.
     this.api.post("/itens", this.exigirLogin, this.receberFotos, (req, res) => c.registrar(req, res));
     this.api.patch("/itens/:id/recebimento", this.exigirAdmin, (req, res) => c.confirmarRecebimento(req, res));
@@ -135,8 +137,8 @@ export class App {
   /** RF02.3 */
   private configurarRotasDeReferencias(): void {
     const c = this.referenciaController;
-    this.api.get("/referencias/categorias", (req, res) => c.listarCategorias(req, res));
-    this.api.get("/referencias/locais", (req, res) => c.listarLocais(req, res));
+    this.api.get("/referencias/categorias", this.exigirLogin, (req, res) => c.listarCategorias(req, res));
+    this.api.get("/referencias/locais", this.exigirLogin, (req, res) => c.listarLocais(req, res));
     this.api.post("/referencias/categorias", this.exigirAdmin, (req, res) => c.criarCategoria(req, res));
     this.api.post("/referencias/locais", this.exigirAdmin, (req, res) => c.criarLocal(req, res));
   }

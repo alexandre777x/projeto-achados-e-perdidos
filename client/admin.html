@@ -4,9 +4,10 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Administração – CampusLost</title>
+  <link rel="icon" href="/img/undb.png">
   <link rel="stylesheet" href="/css/style.css">
 </head>
-<body data-exige-login>
+<body>
   <header>
     <a class="marca" href="/">CampusLost</a>
     <nav>
@@ -14,12 +15,13 @@
       <a href="/novo-item.html">Registrar item</a>
       <a href="/minhas-reivindicacoes.html">Minhas reivindicações</a>
       <a href="/admin.html">Administração</a>
-      <a href="/login.html">Entrar</a>
+      <a href="/login.html" id="sair">Sair</a>
     </nav>
   </header>
 
   <main>
     <h1>Administração</h1>
+    <p><a href="/cadastro.html">Criar conta de administrador ou de outra pessoa</a></p>
     <section class="cartao">
       <h2>Aguardando retirada</h2>
       <p class="suave">Reivindicações aprovadas. Quando a pessoa buscar o objeto, abra e registre a devolução.</p>
@@ -155,10 +157,14 @@
         const cartao = document.createElement('div');
         cartao.className = 'item';
 
-        const foto = document.createElement('img');
+        // Sem foto: um quadro "Sem foto" no lugar de uma imagem quebrada
+        const url = item.fotos[0]?.url;
+        const foto = document.createElement(url ? 'img' : 'div');
         foto.className = 'item-foto';
-        foto.src = item.fotos[0]?.url ?? '';
-        foto.alt = `Foto de ${item.titulo}`;
+        if (url) {
+          foto.src = url;
+          foto.alt = `Foto de ${item.titulo}`;
+        }
         const titulo = document.createElement('h3');
         titulo.textContent = `${item.titulo} (nº ${item.id})`;
         const detalhes = document.createElement('p');

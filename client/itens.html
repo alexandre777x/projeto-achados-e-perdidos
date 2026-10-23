@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Itens encontrados – CampusLost</title>
+  <link rel="icon" href="/img/undb.png">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -14,7 +15,7 @@
       <a href="/novo-item.html">Registrar item</a>
       <a href="/minhas-reivindicacoes.html">Minhas reivindicações</a>
       <a href="/admin.html">Administração</a>
-      <a href="/login.html">Entrar</a>
+      <a href="/login.html" id="sair">Sair</a>
     </nav>
   </header>
 
@@ -85,11 +86,14 @@
       link.className = 'item';
       link.href = `/item.html?id=${item.id}`;
 
-      const foto = document.createElement('img');
+      // Sem foto: um quadro "Sem foto" no lugar de uma imagem quebrada
+      const foto = document.createElement(item.foto ? 'img' : 'div');
       foto.className = 'item-foto';
-      foto.src = item.foto ?? '';
-      foto.alt = '';
-      foto.loading = 'lazy';
+      if (item.foto) {
+        foto.src = item.foto;
+        foto.alt = '';
+        foto.loading = 'lazy';
+      }
       const titulo = document.createElement('h3');
       titulo.textContent = item.titulo;
       const detalhes = document.createElement('p');

@@ -26,6 +26,7 @@ Os 18 casos foram executados **pela API** (requisições HTTP direto ao servidor
 | CT16 | RF04.2 | Outra pessoa tenta abrir o endereço de uma prova de posse | Acesso negado | 404 "Reivindicação não encontrada." (de propósito: não revela que a reivindicação existe); sem login, 401 | Aprovado |
 | CT17 | RF05.4 | Relatório com data inicial depois da final | Sistema recusa e explica | 400 "A data inicial não pode ser depois da data final." | Aprovado |
 | CT18 | RF05.5 | Exportar relatório com item cujo título começa com "=" | CSV abre no Excel sem executar fórmula | A célula sai como `'=HYPERLINK(...)`, com apóstrofo na frente | Aprovado no arquivo; conferir abrindo no Excel |
+| CT19 | RNF01 | Abrir o site, uma página interna ou uma foto de item sem estar logado | Vai para a tela de login; depois de entrar, volta para a página pedida | `/` e páginas internas: 302 para `/login.html?voltar=...`; API de leitura: 401; endereços com `..`, `%2E` ou maiúsculas também barrados (incluído em 23/10/2026, teste automático em `test/http.test.ts`) | Aprovado |
 
 ## Caixa branca
 
@@ -36,7 +37,7 @@ Testes que olham o código: cobrem os desvios (if/else) das regras de negócio R
 Na pasta `server/`:
 
 ```bash
-npm test                # roda os 216 testes (cerca de 4 segundos)
+npm test                # roda os 226 testes (cerca de 4 segundos)
 npm run test:cobertura  # roda e mostra a cobertura de linhas e de desvios por arquivo
 ```
 
@@ -54,7 +55,7 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 | `test/services/ItemService.test.ts` | Service + banco | Registro, manutenção (RF02.6), busca com todos os filtros (RF03) e detalhe por perfil |
 | `test/services/ReivindicacaoService.test.ts` | Service + banco | Abrir, rejeitar com e sem outras abertas, quem pode decidir, mensagens e provas |
 | `test/services/autenticacao.test.ts` | Service + banco | Cadastro (RF01.1, RF01.2, RF01.5), login (CT02, CT03) e recuperação de senha (CT12 a CT14) |
-| `test/http.test.ts` | API inteira | Servidor de verdade: middlewares de login e perfil (CT11), upload (CT04, CT15, CT16), erros 400/404/500 e o fluxo completo até o CSV |
+| `test/http.test.ts` | API inteira | Servidor de verdade: login obrigatório no site inteiro (CT19), middlewares de login e perfil (CT11), upload (CT04, CT15, CT16), erros 400/404/500 e o fluxo completo até o CSV |
 
 ### Regras de negócio
 
@@ -68,11 +69,11 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 
 ### Resultado de 23/10/2026
 
-**216 testes, 216 aprovados**, repetidos três vezes sem falha.
+**226 testes, 226 aprovados**, repetidos três vezes sem falha.
 
 | Cobertura (`npm run test:cobertura`) | Linhas | Desvios (branches) | Funções |
 | --- | --- | --- | --- |
-| Total | 96,8% | 93,0% | 90,0% |
+| Total | 96,9% | 93,2% | 90,0% |
 
 Os services (onde ficam as regras) e os models principais têm de 96% a 99% das linhas cobertas. Na leitura do relatório:
 

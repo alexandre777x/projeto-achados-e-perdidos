@@ -74,7 +74,7 @@ export class ItemService {
 
   /**
    * RF03.5: detalhes com nomes da categoria e do local e as fotos, sem quem registrou.
-   * O público vê itens disponíveis ou em reivindicação; os que aguardam recebimento
+   * Alunos e professores veem itens disponíveis ou em reivindicação; os que aguardam recebimento
    * ou já foram devolvidos (RN03) só a administração vê.
    */
   public detalhar(id: number, perfil: PerfilUsuario | null) {

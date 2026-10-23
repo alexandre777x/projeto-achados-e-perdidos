@@ -33,7 +33,7 @@ npm run criar-admin
 npm run dev
 ```
 
-Abra http://localhost:3000. A página inicial mostra "Servidor ok" quando o servidor e o banco estão funcionando.
+Abra http://localhost:3000: o site abre na tela de login. O site inteiro exige conta, então entre com o administrador do passo 3 ou clique em "Criar conta".
 
 - O banco é criado sozinho na primeira execução, a partir de `server/database/schema.sql` e `seed.sql`.
   Se o `schema.sql` mudar, apague `server/data/campuslost.db` para o banco ser recriado (os dados de teste se perdem).
@@ -55,8 +55,9 @@ Abra http://localhost:3000. A página inicial mostra "Servidor ok" quando o serv
 projeto-achados-e-perdidos/
 ├── client/                      front-end (servido pelo próprio servidor)
 │   ├── css/style.css            cores da UNDB e componentes
+│   ├── img/undb.png             ícone da UNDB (topo das páginas e aba do navegador)
 │   ├── js/api.js                função para chamar a API
-│   ├── js/menu.js               menu conforme quem está logado
+│   ├── js/menu.js               menu das páginas internas e botão Sair
 │   └── *.html                   páginas
 ├── server/                      back-end em TypeScript
 │   ├── database/                schema.sql e seed.sql
