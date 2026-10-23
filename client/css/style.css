@@ -260,6 +260,32 @@ button:hover,
   color: var(--texto-suave);
 }
 
+/* Detalhes do item */
+.galeria {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+  margin: 16px 0;
+}
+
+.texto-livre {
+  white-space: pre-line; /* mantém as quebras de linha digitadas na descrição */
+}
+
+.dados {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 4px 16px;
+}
+
+.dados dt {
+  font-weight: 600;
+}
+
+.dados dd {
+  margin: 0;
+}
+
 .item-foto {
   display: block;
   width: 100%;

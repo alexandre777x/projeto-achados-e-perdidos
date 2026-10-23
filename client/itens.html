@@ -20,12 +20,136 @@
 
   <main>
     <h1>Itens encontrados</h1>
-    <div class="cartao">
-      <p class="suave">Página a construir (RF03: busca com filtros).</p>
-    </div>
+
+    <form class="cartao" id="filtros" role="search">
+      <label for="q">Palavra-chave</label>
+      <input type="search" id="q" name="q" maxlength="100" placeholder="Ex.: mochila preta, carregador, chave">
+
+      <div class="filtros">
+        <div>
+          <label for="categoria">Categoria</label>
+          <select id="categoria" name="categoria">
+            <option value="">Todas</option>
+          </select>
+        </div>
+        <div>
+          <label for="local">Local</label>
+          <select id="local" name="local">
+            <option value="">Todos</option>
+          </select>
+        </div>
+        <div>
+          <label for="de">Achado de</label>
+          <input type="date" id="de" name="de">
+        </div>
+        <div>
+          <label for="ate">Até</label>
+          <input type="date" id="ate" name="ate">
+        </div>
+      </div>
+
+      <button type="submit">Buscar</button>
+      <a class="botao botao-claro" href="/itens.html">Limpar filtros</a>
+    </form>
+
+    <p id="aviso" role="status"></p>
+    <div class="grade-itens" id="resultados"></div>
   </main>
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script>
+    // RF03.1 a RF03.4: busca de itens disponíveis com filtros.
+    // Os filtros ficam na URL (?q=&categoria=&local=&de=&ate=), como faz a busca da página inicial.
+    const LIMITE = 60;
+    const formulario = document.getElementById('filtros');
+    const aviso = document.getElementById('aviso');
+    const resultados = document.getElementById('resultados');
+    const parametros = new URLSearchParams(location.search);
+
+    function mostrar(texto, ehErro) {
+      aviso.textContent = texto;
+      aviso.className = ehErro ? 'erro' : 'suave';
+    }
+
+    function dataBr(data) {
+      return data.split('-').reverse().join('/');
+    }
+
+    async function preencherLista(select, rota) {
+      for (const opcao of await api(rota)) select.append(new Option(opcao.nome, opcao.id));
+    }
+
+    function cartao(item) {
+      const link = document.createElement('a');
+      link.className = 'item';
+      link.href = `/item.html?id=${item.id}`;
+
+      const foto = document.createElement('img');
+      foto.className = 'item-foto';
+      foto.src = item.foto ?? '';
+      foto.alt = '';
+      foto.loading = 'lazy';
+      const titulo = document.createElement('h3');
+      titulo.textContent = item.titulo;
+      const detalhes = document.createElement('p');
+      detalhes.textContent = `${item.categoria} · ${item.local} · ${dataBr(item.dataAchado)}`;
+
+      link.append(foto, titulo, detalhes);
+      return link;
+    }
+
+    async function buscar() {
+      // Só manda os filtros preenchidos
+      const consulta = new URLSearchParams();
+      for (const [nome, valor] of parametros) if (valor.trim()) consulta.set(nome, valor.trim());
+
+      resultados.replaceChildren();
+      mostrar('Buscando...');
+      try {
+        const itens = await api('/itens?' + consulta);
+        resultados.replaceChildren(...itens.map(cartao));
+        if (itens.length === 0) {
+          // RF03.4
+          mostrar(consulta.toString()
+            ? 'Nenhum item encontrado com esses filtros. Tente outra palavra ou remova algum filtro.'
+            : 'Nenhum item disponível no momento.');
+        } else if (itens.length >= LIMITE) {
+          mostrar(`Mostrando os ${LIMITE} itens mais recentes. Use os filtros para encontrar o que procura.`);
+        } else {
+          mostrar(itens.length === 1 ? '1 item encontrado.' : `${itens.length} itens encontrados.`);
+        }
+      } catch (erro) {
+        mostrar(erro.message, true);
+      }
+    }
+
+    // Ao buscar, recarrega a página só com os filtros preenchidos na URL
+    formulario.addEventListener('submit', (evento) => {
+      evento.preventDefault();
+      if (formulario.de.value && formulario.ate.value && formulario.de.value > formulario.ate.value) {
+        return mostrar('A data inicial não pode ser depois da data final.', true);
+      }
+      const novos = new URLSearchParams();
+      for (const [nome, valor] of new FormData(formulario)) if (valor.trim()) novos.set(nome, valor.trim());
+      location.search = novos.toString();
+    });
+
+    (async () => {
+      try {
+        await Promise.all([
+          preencherLista(formulario.categoria, '/referencias/categorias'),
+          preencherLista(formulario.local, '/referencias/locais'),
+        ]);
+      } catch (erro) {
+        mostrar(erro.message, true);
+      }
+      // Recoloca no formulário os filtros que vieram na URL
+      for (const nome of ['q', 'categoria', 'local', 'de', 'ate']) {
+        if (parametros.has(nome)) formulario[nome].value = parametros.get(nome);
+      }
+      buscar();
+    })();
+  </script>
 </body>
 </html>

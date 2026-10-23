@@ -59,7 +59,7 @@
         el.classList.add('erro');
       });
 
-    // Últimos itens (RF03). Espera uma lista com titulo, local e status de cada item.
+    // Últimos itens disponíveis (RF03.1)
     const rotulos = {
       AGUARDANDO_RECEBIMENTO: 'Aguardando recebimento',
       DISPONIVEL: 'Disponível',
@@ -67,8 +67,8 @@
       DEVOLVIDO: 'Devolvido',
     };
 
-    api('/itens')
-      .then((itens) => mostrarItens(itens.slice(0, 4)))
+    api('/itens?limite=4')
+      .then(mostrarItens)
       .catch(() => mostrarItens([]));
 
     function mostrarItens(itens) {
@@ -80,6 +80,10 @@
         cartao.className = 'item';
         cartao.href = `/item.html?id=${item.id}`;
 
+        const foto = document.createElement('img');
+        foto.className = 'item-foto';
+        foto.src = item.foto ?? '';
+        foto.alt = '';
         const titulo = document.createElement('h3');
         titulo.textContent = item.titulo;
         const local = document.createElement('p');
@@ -88,7 +92,7 @@
         selo.className = `selo selo-${item.status.toLowerCase()}`;
         selo.textContent = rotulos[item.status];
 
-        cartao.append(titulo, local, selo);
+        cartao.append(foto, titulo, local, selo);
         grade.append(cartao);
       }
     }

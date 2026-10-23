@@ -3,7 +3,8 @@ import { Foto } from "../module/Foto";
 import { StatusItem } from "../module/StatusItem";
 import { ErroDeNegocio } from "../module/ErroDeNegocio";
 import { PerfilUsuario } from "../module/PerfilUsuario";
-import { ItemRepository } from "../repositories/ItemRepository";
+import { PeriodoDeDatas } from "../module/PeriodoDeDatas";
+import { ItemRepository, ItemResumo } from "../repositories/ItemRepository";
 import { CategoriaRepository } from "../repositories/CategoriaRepository";
 import { LocalRepository } from "../repositories/LocalRepository";
 
@@ -21,8 +22,20 @@ export interface QuemRegistra {
   perfil: PerfilUsuario;
 }
 
-/** Registro (RF02.1 a RF02.5) e manutenção pelo administrador (RF02.6) dos itens. */
+/** Parâmetros da URL da busca, como chegam do Express. */
+export interface ConsultaBusca {
+  categoria?: unknown;
+  local?: unknown;
+  de?: unknown;
+  ate?: unknown;
+  q?: unknown;
+  limite?: unknown;
+}
+
+/** Registro (RF02), manutenção pelo administrador (RF02.6) e busca (RF03) dos itens. */
 export class ItemService {
+  public static readonly LIMITE_BUSCA = 60;
+
   private readonly itemRepo = new ItemRepository();
   private readonly categoriaRepo = new CategoriaRepository();
   private readonly localRepo = new LocalRepository();
@@ -38,6 +51,44 @@ export class ItemService {
       status: Item.statusInicial(quem.perfil),
     });
     return this.itemRepo.salvar(item, caminhosDasFotos);
+  }
+
+  /**
+   * RF03.1 a RF03.3, a partir da URL: ?categoria=&local=&de=&ate=&q=&limite=.
+   * Devolve no máximo LIMITE_BUSCA itens; quem quiser ver mais refina os filtros.
+   */
+  public buscar(consulta: ConsultaBusca): ItemResumo[] {
+    const texto = String(consulta.q ?? "").trim();
+    if (texto.length > 100) {
+      throw new ErroDeNegocio("A busca pode ter no máximo 100 caracteres.");
+    }
+    const limite = consulta.limite === undefined ? ItemService.LIMITE_BUSCA : ItemService.lerId(consulta.limite);
+    return this.itemRepo.buscar({
+      categoriaId: ItemService.lerFiltroId(consulta.categoria, "Categoria inválida."),
+      localId: ItemService.lerFiltroId(consulta.local, "Local inválido."),
+      periodo: new PeriodoDeDatas(consulta.de, consulta.ate),
+      palavras: texto ? texto.split(/\s+/) : [],
+      limite: Math.min(limite ?? ItemService.LIMITE_BUSCA, ItemService.LIMITE_BUSCA),
+    });
+  }
+
+  /**
+   * RF03.5: detalhes com nomes da categoria e do local e as fotos, sem quem registrou.
+   * O público vê itens disponíveis ou em reivindicação; os que aguardam recebimento
+   * ou já foram devolvidos (RN03) só a administração vê.
+   */
+  public detalhar(id: number, perfil: PerfilUsuario | null) {
+    const item = this.buscarPorId(id);
+    const publico = [StatusItem.DISPONIVEL, StatusItem.EM_REIVINDICACAO].includes(item.getStatus());
+    if (!publico && perfil !== PerfilUsuario.ADMINISTRADOR) {
+      throw new ErroDeNegocio("Item não encontrado.", 404);
+    }
+    return {
+      ...item.toJSON(),
+      categoria: this.categoriaRepo.buscarPorId(item.getCategoriaId())?.getNome(),
+      local: this.localRepo.buscarPorId(item.getLocalId())?.getNome(),
+      fotos: this.listarFotos(id),
+    };
   }
 
   public buscarPorId(id: number): Item {
@@ -101,6 +152,18 @@ export class ItemService {
       categoriaId,
       localId,
     };
+  }
+
+  /** Filtro de categoria ou local: vazio não filtra; qualquer coisa que não seja id é erro. */
+  private static lerFiltroId(valor: unknown, mensagem: string): number | null {
+    if (valor === undefined || valor === "") {
+      return null;
+    }
+    const id = ItemService.lerId(valor);
+    if (id === null) {
+      throw new ErroDeNegocio(mensagem);
+    }
+    return id;
   }
 
   /** Inteiro positivo vindo do formulário ou da URL; null se não for. */

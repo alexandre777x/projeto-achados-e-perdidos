@@ -19,13 +19,185 @@
   </header>
 
   <main>
-    <h1>Detalhes do item</h1>
-    <div class="cartao">
-      <p class="suave">Página a construir (RF03.5 e RF04.1: reivindicar).</p>
-    </div>
+    <p><a href="/itens.html">← Voltar para a busca</a></p>
+    <p id="aviso" role="status"></p>
+
+    <article class="cartao" id="detalhes" hidden>
+      <h1 id="titulo"></h1>
+      <span id="selo" class="selo"></span>
+      <div class="galeria" id="galeria"></div>
+      <p id="descricao" class="texto-livre"></p>
+      <dl class="dados">
+        <dt>Categoria</dt><dd id="categoria"></dd>
+        <dt>Encontrado em</dt><dd id="local"></dd>
+        <dt>Data do achado</dt><dd id="dataAchado"></dd>
+        <dt>Número do item</dt><dd id="numero"></dd>
+      </dl>
+    </article>
+
+    <!-- RF02.6: só aparece para a administração -->
+    <section class="cartao" id="administracao" hidden>
+      <h2>Administração</h2>
+      <button type="button" id="confirmar" hidden>Confirmar recebimento</button>
+      <button type="button" id="abrir-edicao">Editar</button>
+      <button type="button" class="botao-claro" id="excluir">Excluir</button>
+
+      <form id="form-edicao" novalidate hidden>
+        <label for="ed-titulo">Título</label>
+        <input type="text" id="ed-titulo" name="titulo" required minlength="3" maxlength="80">
+        <label for="ed-descricao">Descrição</label>
+        <textarea id="ed-descricao" name="descricao" rows="4" required maxlength="1000"></textarea>
+        <div class="acoes">
+          <div>
+            <label for="ed-categoria">Categoria</label>
+            <select id="ed-categoria" name="categoriaId" required></select>
+          </div>
+          <div>
+            <label for="ed-local">Local</label>
+            <select id="ed-local" name="localId" required></select>
+          </div>
+        </div>
+        <label for="ed-data">Data do achado</label>
+        <input type="date" id="ed-data" name="dataAchado" required>
+        <button type="submit">Salvar alterações</button>
+        <button type="button" class="botao-claro" id="cancelar-edicao">Cancelar</button>
+      </form>
+      <p id="aviso-admin" role="status"></p>
+    </section>
   </main>
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script>
+    // RF03.5: detalhes do item, sem dados de quem registrou
+    const id = new URLSearchParams(location.search).get('id');
+    const aviso = document.getElementById('aviso');
+    const avisoAdmin = document.getElementById('aviso-admin');
+    const formEdicao = document.getElementById('form-edicao');
+    const rotulos = {
+      AGUARDANDO_RECEBIMENTO: 'Aguardando recebimento',
+      DISPONIVEL: 'Disponível',
+      EM_REIVINDICACAO: 'Em reivindicação',
+      DEVOLVIDO: 'Devolvido',
+    };
+    let item = null;
+
+    function mostrar(elemento, texto, ehErro) {
+      elemento.textContent = texto;
+      elemento.className = ehErro ? 'erro' : '';
+    }
+
+    function hoje() {
+      const agora = new Date();
+      return new Date(agora.getTime() - agora.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    }
+
+    function exibir(dados) {
+      item = dados;
+      document.title = `${item.titulo} – CampusLost`;
+      document.getElementById('titulo').textContent = item.titulo;
+      const selo = document.getElementById('selo');
+      selo.className = `selo selo-${item.status.toLowerCase()}`;
+      selo.textContent = rotulos[item.status];
+      document.getElementById('descricao').textContent = item.descricao;
+      document.getElementById('categoria').textContent = item.categoria;
+      document.getElementById('local').textContent = item.local;
+      document.getElementById('dataAchado').textContent = item.dataAchado.split('-').reverse().join('/');
+      document.getElementById('numero').textContent = item.id;
+      document.getElementById('galeria').replaceChildren(...item.fotos.map((foto, i) => {
+        const link = document.createElement('a');
+        link.href = foto.url;
+        link.target = '_blank';
+        const img = document.createElement('img');
+        img.className = 'item-foto';
+        img.src = foto.url;
+        img.alt = `Foto ${i + 1} de ${item.titulo}`;
+        link.append(img);
+        return link;
+      }));
+      document.getElementById('confirmar').hidden = item.status !== 'AGUARDANDO_RECEBIMENTO';
+      document.getElementById('detalhes').hidden = false;
+    }
+
+    async function carregar() {
+      if (!id) {
+        mostrar(aviso, 'Item não informado. Volte para a busca e escolha um item.', true);
+        return;
+      }
+      try {
+        exibir(await api(`/itens/${encodeURIComponent(id)}`));
+      } catch (erro) {
+        mostrar(aviso, erro.message, true);
+        return;
+      }
+
+      // RF02.6: ferramentas da administração
+      const usuario = await api('/auth/eu').catch(() => null);
+      if (usuario?.perfil === 'ADMINISTRADOR') prepararAdministracao();
+    }
+
+    async function prepararAdministracao() {
+      document.getElementById('administracao').hidden = false;
+      const [categorias, locais] = await Promise.all([api('/referencias/categorias'), api('/referencias/locais')]);
+      for (const c of categorias) formEdicao.categoriaId.append(new Option(c.nome, c.id));
+      for (const l of locais) formEdicao.localId.append(new Option(l.nome, l.id));
+      formEdicao.dataAchado.max = hoje();
+    }
+
+    async function agir(acao, mensagem) {
+      mostrar(avisoAdmin, '');
+      try {
+        exibir(await acao());
+        mostrar(avisoAdmin, mensagem, false);
+        return true;
+      } catch (erro) {
+        mostrar(avisoAdmin, erro.message, true);
+        return false;
+      }
+    }
+
+    // As rotas de manutenção devolvem só os ids de categoria e local; o detalhe traz os nomes.
+    const recarregar = () => api(`/itens/${item.id}`);
+
+    document.getElementById('confirmar').addEventListener('click', () =>
+      agir(async () => { await api(`/itens/${item.id}/recebimento`, { method: 'PATCH' }); return recarregar(); },
+        'Recebimento confirmado. O item já aparece na busca.'));
+
+    document.getElementById('abrir-edicao').addEventListener('click', () => {
+      formEdicao.titulo.value = item.titulo;
+      formEdicao.descricao.value = item.descricao;
+      formEdicao.categoriaId.value = item.categoriaId;
+      formEdicao.localId.value = item.localId;
+      formEdicao.dataAchado.value = item.dataAchado;
+      formEdicao.hidden = false;
+      formEdicao.titulo.focus();
+    });
+
+    document.getElementById('cancelar-edicao').addEventListener('click', () => {
+      formEdicao.hidden = true;
+    });
+
+    formEdicao.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const dados = Object.fromEntries(new FormData(formEdicao));
+      const salvou = await agir(
+        async () => { await api(`/itens/${item.id}`, { method: 'PUT', body: dados }); return recarregar(); },
+        'Alterações salvas.');
+      if (salvou) formEdicao.hidden = true;
+    });
+
+    document.getElementById('excluir').addEventListener('click', async () => {
+      if (!confirm(`Excluir "${item.titulo}"? As fotos também serão apagadas.`)) return;
+      try {
+        await api(`/itens/${item.id}`, { method: 'DELETE' });
+        location.href = '/itens.html';
+      } catch (erro) {
+        mostrar(avisoAdmin, erro.message, true);
+      }
+    });
+
+    // A reivindicação (RF04.1) entra nesta página quando for implementada.
+    carregar();
+  </script>
 </body>
 </html>

@@ -9,14 +9,15 @@ import { UploadMiddleware } from "../middlewares/UploadMiddleware";
 export class ItemController {
   private readonly servico = new ItemService();
 
-  /** RF03.1 a RF03.4 (filtros: categoria, local, de, ate, q) */
+  /** RF03.1 a RF03.3 (filtros: categoria, local, de, ate, q, limite). Lista vazia = RF03.4 na tela. */
   public buscar(req: Request, res: Response): void {
-    throw ErroDeNegocio.naoImplementado("RF03.1 a RF03.4");
+    res.json(this.servico.buscar(req.query));
   }
 
   /** RF03.5 */
   public detalhar(req: Request, res: Response): void {
-    throw ErroDeNegocio.naoImplementado("RF03.5");
+    const perfil = SessaoDaRequisicao.usuario(req)?.perfil ?? null;
+    res.json(this.servico.detalhar(ItemController.id(req), perfil));
   }
 
   /**
