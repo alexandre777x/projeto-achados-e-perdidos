@@ -20,9 +20,13 @@
 
   <main>
     <h1>Administração</h1>
-    <div class="cartao">
-      <p class="suave">Página a construir (RF05.1: registrar devolução).</p>
-    </div>
+    <section class="cartao">
+      <h2>Aguardando retirada</h2>
+      <p class="suave">Reivindicações aprovadas. Quando a pessoa buscar o objeto, abra e registre a devolução.</p>
+      <ul class="lista-simples" id="lista-pendentes"></ul>
+      <p class="suave" id="pendentes-vazio" hidden>Nenhum item aguardando retirada.</p>
+      <p id="aviso-pendentes" role="status"></p>
+    </section>
 
     <section class="cartao">
       <h2>Reivindicações abertas</h2>
@@ -99,27 +103,34 @@
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
   <script>
+    // Listas de reivindicações: cada linha abre a página da reivindicação
+    function listarReivindicacoes(rota, idLista, idVazio, idAviso, campoData) {
+      api(rota)
+        .then((reivindicacoes) => {
+          document.getElementById(idVazio).hidden = reivindicacoes.length > 0;
+          document.getElementById(idLista).replaceChildren(...reivindicacoes.map((r) => {
+            const li = document.createElement('li');
+            const link = document.createElement('a');
+            link.href = `/reivindicacao.html?id=${r.id}`;
+            link.textContent = `${r.itemTitulo} (item nº ${r.itemId})`;
+            const quem = document.createElement('span');
+            quem.className = 'suave';
+            quem.textContent = `${r.reivindicante} · ${new Date(r[campoData].replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}`;
+            li.append(link, quem);
+            return li;
+          }));
+        })
+        .catch((erro) => {
+          const aviso = document.getElementById(idAviso);
+          aviso.textContent = erro.message;
+          aviso.className = 'erro';
+        });
+    }
+
+    // RF05.1: aprovadas esperando o dono retirar
+    listarReivindicacoes('/devolucoes/pendentes', 'lista-pendentes', 'pendentes-vazio', 'aviso-pendentes', 'dataDecisao');
     // RF04.4: fila de reivindicações para analisar
-    api('/reivindicacoes')
-      .then((reivindicacoes) => {
-        document.getElementById('reivindicacoes-vazio').hidden = reivindicacoes.length > 0;
-        document.getElementById('lista-reivindicacoes').replaceChildren(...reivindicacoes.map((r) => {
-          const li = document.createElement('li');
-          const link = document.createElement('a');
-          link.href = `/reivindicacao.html?id=${r.id}`;
-          link.textContent = `${r.itemTitulo} (item nº ${r.itemId})`;
-          const quem = document.createElement('span');
-          quem.className = 'suave';
-          quem.textContent = `${r.reivindicante} · ${new Date(r.dataAbertura.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}`;
-          li.append(link, quem);
-          return li;
-        }));
-      })
-      .catch((erro) => {
-        const aviso = document.getElementById('aviso-reivindicacoes');
-        aviso.textContent = erro.message;
-        aviso.className = 'erro';
-      });
+    listarReivindicacoes('/reivindicacoes', 'lista-reivindicacoes', 'reivindicacoes-vazio', 'aviso-reivindicacoes', 'dataAbertura');
 
     // RF02.6: confirmar o recebimento físico ou excluir itens registrados por outros perfis
     const avisoAguardando = document.getElementById('aviso-aguardando');

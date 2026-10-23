@@ -42,6 +42,10 @@ export class Devolucao {
     return this.tipoDocumento;
   }
 
+  public getDataHora(): string | undefined {
+    return this.dataHora;
+  }
+
   public toJSON() {
     return {
       id: this.id,

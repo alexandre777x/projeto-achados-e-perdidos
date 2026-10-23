@@ -6,6 +6,7 @@ import { PerfilUsuario } from "../module/PerfilUsuario";
 import { ErroDeNegocio } from "../module/ErroDeNegocio";
 import { ItemRepository } from "../repositories/ItemRepository";
 import { UsuarioRepository } from "../repositories/UsuarioRepository";
+import { DevolucaoRepository } from "../repositories/DevolucaoRepository";
 import {
   ArquivoDeProva,
   ReivindicacaoRepository,
@@ -28,6 +29,7 @@ export class ReivindicacaoService {
   private readonly reivindicacaoRepo = new ReivindicacaoRepository();
   private readonly itemRepo = new ItemRepository();
   private readonly usuarioRepo = new UsuarioRepository();
+  private readonly devolucaoRepo = new DevolucaoRepository();
 
   /** RF04.1, RF04.2, RF04.5 e RF04.6. As provas já foram gravadas pelo UploadMiddleware. */
   public abrir(itemId: number, respostas: unknown, provas: ArquivoDeProva[], quem: Solicitante): Reivindicacao {
@@ -63,11 +65,16 @@ export class ReivindicacaoService {
   public detalhar(id: number, quem: Solicitante) {
     const reivindicacao = this.buscarComAcesso(id, quem);
     const item = this.itemRepo.buscarPorId(reivindicacao.getItemId());
+    const devolucao = this.devolucaoRepo.buscarPorReivindicacao(id);
     return {
       ...reivindicacao.toJSON(),
       reivindicante: this.usuarioRepo.buscarPorId(reivindicacao.getReivindicanteId())?.getNome(),
       item: { id: item?.getId(), titulo: item?.getTitulo(), status: item?.getStatus() },
       provas: this.reivindicacaoRepo.listarProvas(id),
+      // RF05.2: só o tipo do documento conferido, nunca o número (RNF10)
+      devolucao: devolucao
+        ? { dataHora: devolucao.getDataHora(), tipoDocumento: devolucao.getTipoDocumento() }
+        : null,
     };
   }
 

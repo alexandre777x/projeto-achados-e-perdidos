@@ -31,6 +31,7 @@
         <dt>Aberta em</dt><dd id="dataAbertura"></dd>
         <dt id="rotulo-decisao" hidden>Decidida em</dt><dd id="dataDecisao" hidden></dd>
         <dt id="rotulo-motivo" hidden>Motivo da rejeição</dt><dd id="motivo" hidden></dd>
+        <dt id="rotulo-devolucao" hidden>Entregue em</dt><dd id="devolucao" hidden></dd>
       </dl>
       <p id="proximo-passo"></p>
 
@@ -55,6 +56,24 @@
       <p id="aviso-decisao" role="status"></p>
     </section>
 
+    <!-- RF05.1 a RF05.3: entrega do objeto ao dono -->
+    <section class="cartao" id="secao-devolucao" hidden>
+      <h2>Registrar devolução</h2>
+      <p class="suave">Confira um documento com foto de quem está retirando. Só o tipo do documento é guardado, nunca o número.</p>
+      <form id="form-devolucao" novalidate>
+        <label for="tipoDocumento">Documento conferido</label>
+        <select id="tipoDocumento" name="tipoDocumento" required>
+          <option value="">Escolha...</option>
+          <option value="RG">RG</option>
+          <option value="CNH">CNH</option>
+          <option value="CARTEIRA_ESTUDANTIL">Carteira estudantil</option>
+          <option value="OUTRO">Outro documento com foto</option>
+        </select>
+        <button type="submit">Registrar devolução</button>
+      </form>
+      <p id="aviso-devolucao" role="status"></p>
+    </section>
+
     <!-- RF04.3: conversa entre o reivindicante e a administração -->
     <section class="cartao" id="secao-conversa" hidden>
       <h2>Conversa com a <span id="com-quem">administração</span></h2>
@@ -75,6 +94,7 @@
     // RF04.3, RF04.4 e RF04.7: acompanhar, conversar e decidir
     const id = new URLSearchParams(location.search).get('id');
     const ROTULOS = { ABERTA: 'Aberta', APROVADA: 'Aprovada', REJEITADA: 'Rejeitada' };
+    const DOCUMENTOS = { RG: 'RG', CNH: 'CNH', CARTEIRA_ESTUDANTIL: 'carteira estudantil', OUTRO: 'outro documento com foto' };
     let souAdmin = false;
 
     function mostrar(elemento, texto, ehErro) {
@@ -107,13 +127,21 @@
       if (r.dataDecisao) preencher('dataDecisao', dataHora(r.dataDecisao));
       for (const campo of ['rotulo-motivo', 'motivo']) document.getElementById(campo).hidden = !r.motivoRejeicao;
       preencher('motivo', r.motivoRejeicao);
+      for (const campo of ['rotulo-devolucao', 'devolucao']) document.getElementById(campo).hidden = !r.devolucao;
+      if (r.devolucao) {
+        preencher('devolucao', `${dataHora(r.devolucao.dataHora)} (documento conferido: ${DOCUMENTOS[r.devolucao.tipoDocumento]})`);
+      }
 
       const passos = {
         ABERTA: 'A administração vai analisar suas respostas. Acompanhe a conversa abaixo.',
-        APROVADA: 'Retire o objeto na segurança do campus levando um documento com foto.',
+        APROVADA: r.devolucao
+          ? 'O objeto já foi entregue a você.'
+          : 'Retire o objeto na segurança do campus levando um documento com foto.',
         REJEITADA: 'Se achar que houve engano, explique na conversa abaixo.',
       };
       preencher('proximo-passo', souAdmin ? '' : passos[r.status]);
+      // RN01: devolução só depois da aprovação, e uma vez
+      document.getElementById('secao-devolucao').hidden = !(souAdmin && r.status === 'APROVADA' && !r.devolucao);
       preencher('respostas', r.respostasValidacao);
 
       document.getElementById('sem-provas').hidden = r.provas.length > 0;
@@ -185,6 +213,23 @@
       const motivo = evento.target.motivo.value.trim();
       if (!motivo) return mostrar('aviso-decisao', 'Informe o motivo da rejeição.', true);
       decidir('rejeitar', { motivo }, 'Reivindicação rejeitada.');
+    });
+
+    document.getElementById('form-devolucao').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const tipoDocumento = evento.target.tipoDocumento.value;
+      mostrar('aviso-devolucao', '');
+      if (!tipoDocumento) return mostrar('aviso-devolucao', 'Escolha o documento conferido.', true);
+      if (!confirm('Confirmar que o objeto foi entregue a esta pessoa? O item sai da busca.')) return;
+      try {
+        await api('/devolucoes', { method: 'POST', body: { reivindicacaoId: Number(id), tipoDocumento } });
+        exibir(await api(`/reivindicacoes/${id}`));
+        document.getElementById('secao-devolucao').hidden = false; // mantém o aviso visível
+        evento.target.hidden = true;
+        mostrar('aviso-devolucao', 'Devolução registrada. O item agora consta como devolvido.', false);
+      } catch (erro) {
+        mostrar('aviso-devolucao', erro.message, true);
+      }
     });
 
     document.getElementById('form-mensagem').addEventListener('submit', async (evento) => {

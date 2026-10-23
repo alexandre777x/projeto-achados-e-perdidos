@@ -160,6 +160,7 @@ export class App {
   private configurarRotasDeDevolucoes(): void {
     const c = this.devolucaoController;
     this.api.post("/devolucoes", this.exigirAdmin, (req, res) => c.registrar(req, res));
+    this.api.get("/devolucoes/pendentes", this.exigirAdmin, (req, res) => c.listarPendentes(req, res));
     this.api.get("/devolucoes/relatorio", this.exigirAdmin, (req, res) => c.relatorio(req, res));
     this.api.get("/devolucoes/relatorio.csv", this.exigirAdmin, (req, res) => c.relatorioCsv(req, res));
   }

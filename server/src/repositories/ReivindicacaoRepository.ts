@@ -106,6 +106,17 @@ export class ReivindicacaoRepository extends Repositorio {
       .all(StatusReivindicacao.ABERTA);
   }
 
+  /** RF05.1: aprovadas cujo item ainda não foi entregue ao dono. */
+  public listarAguardandoDevolucao(): ReivindicacaoResumo[] {
+    return this.db
+      .prepare<[StatusReivindicacao, StatusItem], ReivindicacaoResumo>(
+        `${ReivindicacaoRepository.SELECT_RESUMO}
+         WHERE r.status = ? AND i.status = ? AND NOT EXISTS (SELECT 1 FROM devolucao d WHERE d.reivindicacao_id = r.id)
+         ORDER BY r.data_decisao, r.id`
+      )
+      .all(StatusReivindicacao.APROVADA, StatusItem.EM_REIVINDICACAO);
+  }
+
   public listarAbertasDoItem(itemId: number): Reivindicacao[] {
     return this.db
       .prepare<[number, StatusReivindicacao], LinhaReivindicacao>(
