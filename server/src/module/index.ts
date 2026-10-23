@@ -5,7 +5,6 @@ export * from "./StatusReivindicacao";
 export * from "./TipoDocumento";
 export * from "./Usuario";
 export * from "./Categoria";
-export * from "./Local";
 export * from "./Item";
 export * from "./Foto";
 export * from "./Reivindicacao";

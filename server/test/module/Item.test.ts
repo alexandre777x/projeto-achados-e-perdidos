@@ -11,7 +11,7 @@ function dados(alteracoes: Partial<DadosItem> = {}): DadosItem {
     descricao: "Garrafa térmica",
     dataAchado: "2026-10-01",
     categoriaId: 1,
-    localId: 1,
+    local: "Banco em frente à cantina",
     registradoPor: 1,
     ...alteracoes,
   };
@@ -49,6 +49,16 @@ describe("Item: validação do construtor (RF02.1, RF02.4)", () => {
     assert.throws(() => new Item(dados({ descricao: "a".repeat(1001) })), erroDeNegocio(400, "descrição"));
     assert.throws(() => new Item(dados({ descricao: undefined as unknown as string })), erroDeNegocio(400, "descrição"));
     assert.doesNotThrow(() => new Item(dados({ descricao: "a".repeat(1000) })));
+  });
+
+  test("local: texto de 3 a 150 caracteres, sem espaços nas pontas", () => {
+    assert.equal(new Item(dados({ local: "  Bloco A, sala 104  " })).getLocal(), "Bloco A, sala 104");
+    assert.throws(() => new Item(dados({ local: "ab" })), erroDeNegocio(400, "onde o item foi encontrado"));
+    assert.throws(() => new Item(dados({ local: "   " })), erroDeNegocio(400, "onde"));
+    assert.throws(() => new Item(dados({ local: undefined as unknown as string })), erroDeNegocio(400, "onde"));
+    assert.throws(() => new Item(dados({ local: "a".repeat(151) })), erroDeNegocio(400, "150"));
+    assert.doesNotThrow(() => new Item(dados({ local: "abc" })));
+    assert.doesNotThrow(() => new Item(dados({ local: "a".repeat(150) })));
   });
 
   test("data do achado: formato AAAA-MM-DD", () => {
@@ -123,9 +133,10 @@ describe("Item: consultas e visão pública", () => {
   });
 
   test("getters devolvem o que foi informado", () => {
-    const item = new Item(dados({ categoriaId: 3, localId: 4, registradoPor: 5, dataRegistro: "2026-10-02 10:00:00" }));
+    const item = new Item(dados({ categoriaId: 3, local: "Biblioteca, 2º andar", registradoPor: 5, dataRegistro: "2026-10-02 10:00:00" }));
     assert.equal(item.getCategoriaId(), 3);
-    assert.equal(item.getLocalId(), 4);
+    assert.equal(item.getLocal(), "Biblioteca, 2º andar");
+    assert.equal(item.toJSON().local, "Biblioteca, 2º andar");
     assert.equal(item.getRegistradoPor(), 5);
     assert.equal(item.getDataAchado(), "2026-10-01");
     assert.equal(item.getDataRegistro(), "2026-10-02 10:00:00");

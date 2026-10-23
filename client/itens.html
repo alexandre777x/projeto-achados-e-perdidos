@@ -27,19 +27,14 @@
 
     <form class="cartao" id="filtros" role="search">
       <label for="q">Palavra-chave</label>
-      <input type="search" id="q" name="q" maxlength="100" placeholder="Ex.: mochila preta, carregador, chave">
+      <input type="search" id="q" name="q" maxlength="100" placeholder="Ex.: mochila preta, carregador, cantina">
+      <p class="suave dica-campo">Procura no título, na descrição e no lugar onde o item foi encontrado.</p>
 
       <div class="filtros">
         <div>
           <label for="categoria">Categoria</label>
           <select id="categoria" name="categoria">
             <option value="">Todas</option>
-          </select>
-        </div>
-        <div>
-          <label for="local">Local</label>
-          <select id="local" name="local">
-            <option value="">Todos</option>
           </select>
         </div>
         <div>
@@ -64,7 +59,8 @@
   <script src="/js/menu.js"></script>
   <script>
     // RF03.1 a RF03.4: busca de itens disponíveis com filtros.
-    // Os filtros ficam na URL (?q=&categoria=&local=&de=&ate=), como faz a busca da página inicial.
+    // Os filtros ficam na URL (?q=&categoria=&de=&ate=), como faz a busca da página inicial.
+    // O local é texto livre: procura-se por ele na palavra-chave.
     const LIMITE = 60;
     const formulario = document.getElementById('filtros');
     const aviso = document.getElementById('aviso');
@@ -144,15 +140,12 @@
 
     (async () => {
       try {
-        await Promise.all([
-          preencherLista(formulario.categoria, '/referencias/categorias'),
-          preencherLista(formulario.local, '/referencias/locais'),
-        ]);
+        await preencherLista(formulario.categoria, '/referencias/categorias');
       } catch (erro) {
         mostrar(erro.message, true);
       }
       // Recoloca no formulário os filtros que vieram na URL
-      for (const nome of ['q', 'categoria', 'local', 'de', 'ate']) {
+      for (const nome of ['q', 'categoria', 'de', 'ate']) {
         if (parametros.has(nome)) formulario[nome].value = parametros.get(nome);
       }
       buscar();

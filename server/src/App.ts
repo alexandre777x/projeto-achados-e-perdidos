@@ -134,13 +134,11 @@ export class App {
     this.api.delete("/itens/:id", this.exigirAdmin, (req, res) => c.excluir(req, res));
   }
 
-  /** RF02.3 */
+  /** RF02.3 (só categorias: o local é texto livre no item) */
   private configurarRotasDeReferencias(): void {
     const c = this.referenciaController;
     this.api.get("/referencias/categorias", this.exigirLogin, (req, res) => c.listarCategorias(req, res));
-    this.api.get("/referencias/locais", this.exigirLogin, (req, res) => c.listarLocais(req, res));
     this.api.post("/referencias/categorias", this.exigirAdmin, (req, res) => c.criarCategoria(req, res));
-    this.api.post("/referencias/locais", this.exigirAdmin, (req, res) => c.criarLocal(req, res));
   }
 
   /** RF04 */

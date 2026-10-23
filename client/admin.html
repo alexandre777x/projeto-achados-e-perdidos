@@ -50,34 +50,17 @@
     </section>
 
     <section class="cartao">
-      <h2>Categorias e locais</h2>
-      <p class="suave">São as opções que aparecem no registro e na busca de itens.</p>
-      <div class="acoes">
+      <h2>Categorias</h2>
+      <p class="suave">São as opções que aparecem no registro e na busca de itens. O local onde o item foi achado é escrito por quem registra.</p>
+      <ul id="lista-categorias"></ul>
+      <form id="form-categoria" class="filtros" novalidate>
         <div>
-          <h3>Categorias</h3>
-          <ul id="lista-categorias"></ul>
-          <form id="form-categoria" class="filtros" novalidate>
-            <div>
-              <label for="nova-categoria">Nova categoria</label>
-              <input type="text" id="nova-categoria" name="nome" required minlength="2" maxlength="80">
-            </div>
-            <button type="submit">Adicionar</button>
-          </form>
-          <p id="aviso-categoria" role="status"></p>
+          <label for="nova-categoria">Nova categoria</label>
+          <input type="text" id="nova-categoria" name="nome" required minlength="2" maxlength="80">
         </div>
-        <div>
-          <h3>Locais</h3>
-          <ul id="lista-locais"></ul>
-          <form id="form-local" class="filtros" novalidate>
-            <div>
-              <label for="novo-local">Novo local</label>
-              <input type="text" id="novo-local" name="nome" required minlength="2" maxlength="80">
-            </div>
-            <button type="submit">Adicionar</button>
-          </form>
-          <p id="aviso-local" role="status"></p>
-        </div>
-      </div>
+        <button type="submit">Adicionar</button>
+      </form>
+      <p id="aviso-categoria" role="status"></p>
     </section>
 
     <section class="cartao">
@@ -146,13 +129,11 @@
     }
 
     async function carregarAguardando() {
-      const [itens, categorias, locais] = await Promise.all([
+      const [itens, categorias] = await Promise.all([
         api('/itens/aguardando-recebimento'),
         api('/referencias/categorias'),
-        api('/referencias/locais'),
       ]);
       const nomeCategoria = Object.fromEntries(categorias.map((c) => [c.id, c.nome]));
-      const nomeLocal = Object.fromEntries(locais.map((l) => [l.id, l.nome]));
 
       const grade = document.getElementById('aguardando');
       document.getElementById('aguardando-vazio').hidden = itens.length > 0;
@@ -171,7 +152,7 @@
         const titulo = document.createElement('h3');
         titulo.textContent = `${item.titulo} (nº ${item.id})`;
         const detalhes = document.createElement('p');
-        detalhes.textContent = `${nomeCategoria[item.categoriaId]} · ${nomeLocal[item.localId]} · achado em ${item.dataAchado.split('-').reverse().join('/')}`;
+        detalhes.textContent = `${nomeCategoria[item.categoriaId]} · ${item.local} · achado em ${item.dataAchado.split('-').reverse().join('/')}`;
 
         const confirmar = document.createElement('button');
         confirmar.textContent = 'Confirmar recebimento';
@@ -205,7 +186,7 @@
 
     carregarAguardando().catch((erro) => avisarAguardando(erro.message, true));
 
-    // RF02.3: listas de categorias e locais mantidas pelo administrador
+    // RF02.3: lista de categorias mantida pelo administrador
     function configurarLista(rota, idLista, idForm, idAviso, mensagemCriado) {
       const lista = document.getElementById(idLista);
       const form = document.getElementById(idForm);
@@ -242,7 +223,6 @@
     }
 
     configurarLista('/referencias/categorias', 'lista-categorias', 'form-categoria', 'aviso-categoria', 'Categoria adicionada');
-    configurarLista('/referencias/locais', 'lista-locais', 'form-local', 'aviso-local', 'Local adicionado');
 
     // RF05.4 e RF05.5: relatório por período
     const formRelatorio = document.getElementById('form-relatorio');

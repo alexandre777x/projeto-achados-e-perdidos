@@ -42,7 +42,7 @@ export class DevolucaoRepository extends Repositorio {
   public listarDevolvidos(periodo: PeriodoDeDatas): ItemDevolvido[] {
     return this.db
       .prepare<[string, string], ItemDevolvido>(
-        `SELECT i.id, i.titulo, c.nome AS categoria, l.nome AS local,
+        `SELECT i.id, i.titulo, c.nome AS categoria, i.local_encontrado AS local,
                 i.data_achado AS dataAchado, i.data_registro AS dataRegistro,
                 d.data_hora AS dataDevolucao,
                 ROUND(julianday(d.data_hora) - julianday(i.data_registro), 1) AS diasAteDevolucao
@@ -50,7 +50,6 @@ export class DevolucaoRepository extends Repositorio {
          JOIN reivindicacao r ON r.id = d.reivindicacao_id
          JOIN item i ON i.id = r.item_id
          JOIN categoria c ON c.id = i.categoria_id
-         JOIN local l ON l.id = i.local_id
          WHERE date(d.data_hora) BETWEEN ? AND ?
          ORDER BY d.data_hora DESC`
       )
@@ -61,11 +60,10 @@ export class DevolucaoRepository extends Repositorio {
   public listarSobCustodia(periodo: PeriodoDeDatas): ItemSobCustodia[] {
     return this.db
       .prepare<[string, string], ItemSobCustodia>(
-        `SELECT i.id, i.titulo, c.nome AS categoria, l.nome AS local,
+        `SELECT i.id, i.titulo, c.nome AS categoria, i.local_encontrado AS local,
                 i.data_achado AS dataAchado, i.data_registro AS dataRegistro, i.status
          FROM item i
          JOIN categoria c ON c.id = i.categoria_id
-         JOIN local l ON l.id = i.local_id
          WHERE i.status IN ('DISPONIVEL', 'EM_REIVINDICACAO') AND date(i.data_registro) BETWEEN ? AND ?
          ORDER BY i.data_registro DESC`
       )

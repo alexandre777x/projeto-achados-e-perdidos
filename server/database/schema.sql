@@ -15,11 +15,6 @@ CREATE TABLE categoria (
     nome TEXT NOT NULL UNIQUE
 );
 
-CREATE TABLE local (
-    id   INTEGER PRIMARY KEY AUTOINCREMENT,
-    nome TEXT NOT NULL UNIQUE
-);
-
 CREATE TABLE item (
     id             INTEGER PRIMARY KEY AUTOINCREMENT,
     titulo         TEXT NOT NULL CHECK (length(titulo) BETWEEN 3 AND 80),
@@ -28,11 +23,12 @@ CREATE TABLE item (
     status         TEXT NOT NULL DEFAULT 'AGUARDANDO_RECEBIMENTO'
                    CHECK (status IN ('AGUARDANDO_RECEBIMENTO','DISPONIVEL','EM_REIVINDICACAO','DEVOLVIDO')),
     data_registro  TEXT NOT NULL DEFAULT (datetime('now')),
+    -- Onde foi encontrado, escrito por quem achou (ex.: "banco em frente à cantina")
+    local_encontrado TEXT NOT NULL CHECK (length(local_encontrado) BETWEEN 3 AND 150),
     categoria_id   INTEGER NOT NULL REFERENCES categoria(id),
-    local_id       INTEGER NOT NULL REFERENCES local(id),
     registrado_por INTEGER NOT NULL REFERENCES usuario(id)
 );
-CREATE INDEX idx_item_busca ON item (status, categoria_id, local_id, data_achado);
+CREATE INDEX idx_item_busca ON item (status, categoria_id, data_achado);
 
 CREATE TABLE foto (
     id      INTEGER PRIMARY KEY AUTOINCREMENT,

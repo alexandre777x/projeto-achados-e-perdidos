@@ -6,15 +6,14 @@ import { PerfilUsuario } from "../module/PerfilUsuario";
 import { PeriodoDeDatas } from "../module/PeriodoDeDatas";
 import { ItemRepository, ItemResumo } from "../repositories/ItemRepository";
 import { CategoriaRepository } from "../repositories/CategoriaRepository";
-import { LocalRepository } from "../repositories/LocalRepository";
 
-/** O que vem do formulário: os ids chegam como texto. */
+/** O que vem do formulário: o id da categoria chega como texto. */
 export interface DadosFormularioItem {
   titulo?: unknown;
   descricao?: unknown;
   dataAchado?: unknown;
   categoriaId?: unknown;
-  localId?: unknown;
+  local?: unknown;
 }
 
 export interface QuemRegistra {
@@ -25,7 +24,6 @@ export interface QuemRegistra {
 /** Parâmetros da URL da busca, como chegam do Express. */
 export interface ConsultaBusca {
   categoria?: unknown;
-  local?: unknown;
   de?: unknown;
   ate?: unknown;
   q?: unknown;
@@ -38,7 +36,6 @@ export class ItemService {
 
   private readonly itemRepo = new ItemRepository();
   private readonly categoriaRepo = new CategoriaRepository();
-  private readonly localRepo = new LocalRepository();
 
   /** RF02.1 a RF02.5. As fotos já foram gravadas em disco pelo UploadMiddleware. */
   public registrar(dados: DadosFormularioItem, caminhosDasFotos: string[], quem: QuemRegistra): Item {
@@ -54,7 +51,8 @@ export class ItemService {
   }
 
   /**
-   * RF03.1 a RF03.3, a partir da URL: ?categoria=&local=&de=&ate=&q=&limite=.
+   * RF03.1 a RF03.3, a partir da URL: ?categoria=&de=&ate=&q=&limite=.
+   * O local é texto livre, então entra na busca por palavra-chave (q), não num filtro próprio.
    * Devolve no máximo LIMITE_BUSCA itens; quem quiser ver mais refina os filtros.
    */
   public buscar(consulta: ConsultaBusca): ItemResumo[] {
@@ -65,7 +63,6 @@ export class ItemService {
     const limite = consulta.limite === undefined ? ItemService.LIMITE_BUSCA : ItemService.lerId(consulta.limite);
     return this.itemRepo.buscar({
       categoriaId: ItemService.lerFiltroId(consulta.categoria, "Categoria inválida."),
-      localId: ItemService.lerFiltroId(consulta.local, "Local inválido."),
       periodo: new PeriodoDeDatas(consulta.de, consulta.ate),
       palavras: texto ? texto.split(/\s+/) : [],
       limite: Math.min(limite ?? ItemService.LIMITE_BUSCA, ItemService.LIMITE_BUSCA),
@@ -73,7 +70,7 @@ export class ItemService {
   }
 
   /**
-   * RF03.5: detalhes com nomes da categoria e do local e as fotos, sem quem registrou.
+   * RF03.5: detalhes com o nome da categoria, o local e as fotos, sem quem registrou.
    * Alunos e professores veem itens disponíveis ou em reivindicação; os que aguardam recebimento
    * ou já foram devolvidos (RN03) só a administração vê.
    */
@@ -86,7 +83,6 @@ export class ItemService {
     return {
       ...item.toJSON(),
       categoria: this.categoriaRepo.buscarPorId(item.getCategoriaId())?.getNome(),
-      local: this.localRepo.buscarPorId(item.getLocalId())?.getNome(),
       fotos: this.listarFotos(id),
     };
   }
@@ -135,26 +131,22 @@ export class ItemService {
     return this.itemRepo.deletar(id);
   }
 
-  /** Confere os campos do formulário; título, descrição e data são validados pelo Item. */
+  /** Confere a categoria; título, descrição, local e data são validados pelo Item. */
   private validarDados(dados: DadosFormularioItem) {
     const categoriaId = ItemService.lerId(dados.categoriaId);
     if (categoriaId === null || !this.categoriaRepo.buscarPorId(categoriaId)) {
       throw new ErroDeNegocio("Escolha uma categoria da lista.");
-    }
-    const localId = ItemService.lerId(dados.localId);
-    if (localId === null || !this.localRepo.buscarPorId(localId)) {
-      throw new ErroDeNegocio("Escolha um local da lista.");
     }
     return {
       titulo: String(dados.titulo ?? ""),
       descricao: String(dados.descricao ?? ""),
       dataAchado: String(dados.dataAchado ?? ""),
       categoriaId,
-      localId,
+      local: String(dados.local ?? ""),
     };
   }
 
-  /** Filtro de categoria ou local: vazio não filtra; qualquer coisa que não seja id é erro. */
+  /** Filtro de categoria: vazio não filtra; qualquer coisa que não seja id é erro. */
   private static lerFiltroId(valor: unknown, mensagem: string): number | null {
     if (valor === undefined || valor === "") {
       return null;

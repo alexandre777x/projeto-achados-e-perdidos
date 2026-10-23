@@ -95,7 +95,7 @@ Se uma rota nova for criada antes de ser programada, ela pode lançar `ErroDeNeg
 | RF01.1, RF01.2, RF01.5 Cadastro ✅ | `AutenticacaoController` | `AutenticacaoService`, `UsuarioRepository` | `Usuario` | `cadastro.html` |
 | RF01.6 Recuperar senha ✅ | `AutenticacaoController` | `RecuperacaoSenhaService`, `RecuperacaoSenhaRepository`, `EmailService` | `Usuario` | `esqueci-senha.html`, `redefinir-senha.html` |
 | RF02 Registro de item ✅ | `ItemController` | `ItemService`, `ItemRepository`, `UploadMiddleware` | `Item`, `Foto`, `HistoricoStatus` | `novo-item.html`, `admin.html` |
-| RF02.3 Categorias e locais ✅ | `ReferenciaController` | `CategoriaRepository`, `LocalRepository` | `Categoria`, `Local` | `admin.html`, `novo-item.html`, `itens.html` |
+| RF02.3 Categorias ✅ (o local virou texto livre, ver `docs/mudancas-de-requisitos.md`) | `ReferenciaController` | `CategoriaRepository` | `Categoria` | `admin.html`, `novo-item.html`, `itens.html` |
 | RF03 Busca ✅ | `ItemController` | `ItemService`, `ItemRepository` | `Item` | `index.html`, `itens.html`, `item.html` |
 | RF04 Reivindicação ✅ | `ReivindicacaoController` | `ReivindicacaoService`, `ReivindicacaoRepository` | `Reivindicacao`, `ProvaPosse`, `Mensagem` | `item.html`, `reivindicacao.html`, `minhas-reivindicacoes.html`, `admin.html` |
 | RF05.1 a RF05.3 Devolução ✅ | `DevolucaoController` | `DevolucaoService`, `DevolucaoRepository` | `Devolucao` | `admin.html`, `reivindicacao.html` |

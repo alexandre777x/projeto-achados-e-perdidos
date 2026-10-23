@@ -6,9 +6,7 @@ import { StatusItem } from "../../src/module/StatusItem";
 import { ItemService } from "../../src/services/ItemService";
 import { ReivindicacaoService } from "../../src/services/ReivindicacaoService";
 import { CategoriaRepository } from "../../src/repositories/CategoriaRepository";
-import { LocalRepository } from "../../src/repositories/LocalRepository";
 import { Categoria } from "../../src/module/Categoria";
-import { Local } from "../../src/module/Local";
 import { contar, criarItem, criarUsuario, historicoDoItem, prepararBanco, sql, statusDoItem } from "../fabrica";
 import { erroDeNegocio } from "../verificar";
 
@@ -18,7 +16,7 @@ const admin = criarUsuario(PerfilUsuario.ADMINISTRADOR);
 const aluno = criarUsuario(PerfilUsuario.ALUNO);
 const professor = criarUsuario(PerfilUsuario.PROFESSOR);
 
-const FORMULARIO = { titulo: "Garrafa azul", descricao: "Garrafa térmica", dataAchado: "2026-10-01", categoriaId: "6", localId: "3" };
+const FORMULARIO = { titulo: "Garrafa azul", descricao: "Garrafa térmica", dataAchado: "2026-10-01", categoriaId: "6", local: "Biblioteca, perto da janela" };
 
 describe("ItemService.registrar (RF02.1 a RF02.5)", () => {
   test("sem foto é recusado (RF02.2)", () => {
@@ -38,15 +36,13 @@ describe("ItemService.registrar (RF02.1 a RF02.5)", () => {
     assert.deepEqual(historicoDoItem(id), [{ status_anterior: null, status_novo: StatusItem.AGUARDANDO_RECEBIMENTO, usuario_id: aluno.id }]);
   });
 
-  test("categoria e local: precisam ser ids existentes (RF02.3)", () => {
+  test("categoria: precisa ser um id existente (RF02.3)", () => {
     const casos: [Record<string, unknown>, string][] = [
       [{ categoriaId: "999" }, "categoria"],
       [{ categoriaId: "abc" }, "categoria"],
       [{ categoriaId: "0" }, "categoria"],
       [{ categoriaId: "1.5" }, "categoria"],
       [{ categoriaId: undefined }, "categoria"],
-      [{ localId: "999" }, "local"],
-      [{ localId: "-1" }, "local"],
     ];
     for (const [alteracao, campo] of casos) {
       assert.throws(() => servico.registrar({ ...FORMULARIO, ...alteracao }, ["a.png"], aluno), erroDeNegocio(400, campo), JSON.stringify(alteracao));
@@ -54,7 +50,15 @@ describe("ItemService.registrar (RF02.1 a RF02.5)", () => {
   });
 
   test("campos ausentes viram texto vazio e são recusados pelo Item", () => {
-    assert.throws(() => servico.registrar({ categoriaId: "1", localId: "1" }, ["a.png"], aluno), erroDeNegocio(400, "título"));
+    assert.throws(() => servico.registrar({ categoriaId: "1" }, ["a.png"], aluno), erroDeNegocio(400, "título"));
+  });
+
+  test("local: texto livre, obrigatório, guardado sem espaços nas pontas", () => {
+    const item = servico.registrar({ ...FORMULARIO, local: "  Cantina, mesa do canto  " }, ["a.png"], aluno);
+    assert.equal(servico.buscarPorId(item.getId() as number).getLocal(), "Cantina, mesa do canto");
+    for (const local of [undefined, "", "ab", "a".repeat(151)]) {
+      assert.throws(() => servico.registrar({ ...FORMULARIO, local }, ["a.png"], aluno), erroDeNegocio(400, "onde"), String(local));
+    }
   });
 
   test("falha no registro não deixa item gravado", () => {
@@ -86,11 +90,12 @@ describe("ItemService: manutenção pelo administrador (RF02.6)", () => {
 
   test("editar troca os dados mas mantém status, autor e data de registro", () => {
     const id = criarItem({ registradoPor: aluno.id, status: StatusItem.EM_REIVINDICACAO, dataRegistro: "2026-01-01 08:00:00" });
-    const editado = servico.editar(id, { ...FORMULARIO, titulo: "Garrafa verde", categoriaId: 2, localId: 4 });
+    const editado = servico.editar(id, { ...FORMULARIO, titulo: "Garrafa verde", categoriaId: 2, local: "Portaria" });
     assert.equal(editado.getTitulo(), "Garrafa verde");
     const lido = servico.buscarPorId(id);
     assert.equal(lido.getTitulo(), "Garrafa verde");
     assert.equal(lido.getCategoriaId(), 2);
+    assert.equal(lido.getLocal(), "Portaria");
     assert.equal(lido.getStatus(), StatusItem.EM_REIVINDICACAO);
     assert.equal(lido.getRegistradoPor(), aluno.id);
     assert.equal(lido.getDataRegistro(), "2026-01-01 08:00:00");
@@ -132,9 +137,9 @@ describe("ItemService.buscar (RF03.1 a RF03.3)", () => {
   // Cenário próprio, com títulos que só existem aqui
   const marca = "Zq";
   const ids = {
-    mochila: criarItem({ registradoPor: admin.id, titulo: `${marca} Mochila preta`, categoriaId: 3, localId: 1, dataAchado: "2026-09-01", dataRegistro: "2026-09-01 10:00:00" }),
-    fone: criarItem({ registradoPor: admin.id, titulo: `${marca} Fone`, descricao: "Fone PRETO sem fio", categoriaId: 1, localId: 1, dataAchado: "2026-09-10", dataRegistro: "2026-09-10 10:00:00" }),
-    chave: criarItem({ registradoPor: admin.id, titulo: `${marca} Chave 100%`, categoriaId: 5, localId: 4, dataAchado: "2026-09-20", dataRegistro: "2026-09-20 10:00:00" }),
+    mochila: criarItem({ registradoPor: admin.id, titulo: `${marca} Mochila preta`, categoriaId: 3, local: "Bloco A, sala 104", dataAchado: "2026-09-01", dataRegistro: "2026-09-01 10:00:00" }),
+    fone: criarItem({ registradoPor: admin.id, titulo: `${marca} Fone`, descricao: "Fone PRETO sem fio", categoriaId: 1, local: "Bloco A, corredor", dataAchado: "2026-09-10", dataRegistro: "2026-09-10 10:00:00" }),
+    chave: criarItem({ registradoPor: admin.id, titulo: `${marca} Chave 100%`, categoriaId: 5, local: "Banco em frente à cantina", dataAchado: "2026-09-20", dataRegistro: "2026-09-20 10:00:00" }),
   };
   const buscar = (consulta: Record<string, unknown>) =>
     servico.buscar({ ...consulta, q: `${marca} ${consulta.q ?? ""}`.trim() }).map((i) => i.id);
@@ -145,20 +150,22 @@ describe("ItemService.buscar (RF03.1 a RF03.3)", () => {
 
   test("filtros isolados e combinados (RF03.2)", () => {
     assert.deepEqual(buscar({ categoria: "1" }), [ids.fone]);
-    assert.deepEqual(buscar({ local: "1" }), [ids.fone, ids.mochila]);
-    assert.deepEqual(buscar({ categoria: "3", local: "1" }), [ids.mochila]);
-    assert.deepEqual(buscar({ categoria: "3", local: "4" }), []);
+    assert.deepEqual(buscar({ categoria: "3", q: "bloco" }), [ids.mochila]);
+    assert.deepEqual(buscar({ categoria: "3", q: "cantina" }), []);
     assert.deepEqual(buscar({ de: "2026-09-05", ate: "2026-09-15" }), [ids.fone]);
     assert.deepEqual(buscar({ de: "2026-09-10" }), [ids.chave, ids.fone]);
     assert.deepEqual(buscar({ ate: "2026-09-10" }), [ids.fone, ids.mochila]);
   });
 
   test("filtro vazio não filtra", () => {
-    assert.deepEqual(buscar({ categoria: "", local: "" }), [ids.chave, ids.fone, ids.mochila]);
+    assert.deepEqual(buscar({ categoria: "" }), [ids.chave, ids.fone, ids.mochila]);
   });
 
-  test("palavras: no título ou na descrição, sem diferenciar maiúsculas, todas precisam aparecer (RF03.3)", () => {
+  test("palavras: no título, na descrição ou no local, sem diferenciar maiúsculas, todas precisam aparecer (RF03.3)", () => {
     assert.deepEqual(buscar({ q: "preta" }), [ids.mochila]);
+    assert.deepEqual(buscar({ q: "cantina" }), [ids.chave], "acha pelo local");
+    assert.deepEqual(buscar({ q: "BLOCO A" }), [ids.fone, ids.mochila], "local, sem diferenciar maiúsculas");
+    assert.deepEqual(buscar({ q: "fone corredor" }), [ids.fone], "uma palavra no título e outra no local");
     assert.deepEqual(buscar({ q: "preto" }), [ids.fone]);
     assert.deepEqual(buscar({ q: "FONE   preto" }), [ids.fone]);
     assert.deepEqual(buscar({ q: "fone mochila" }), []);
@@ -170,11 +177,11 @@ describe("ItemService.buscar (RF03.1 a RF03.3)", () => {
     assert.deepEqual(buscar({ q: "\\" }), []);
   });
 
-  test("resultado traz nomes e a primeira foto", () => {
+  test("resultado traz o nome da categoria, o local e a primeira foto", () => {
     sql("INSERT INTO foto (caminho, item_id) VALUES ('primeira.png', ?), ('segunda.png', ?)", ids.fone, ids.fone);
     const fone = servico.buscar({ q: `${marca} fone` })[0];
     assert.equal(fone.categoria, "Eletrônicos");
-    assert.equal(fone.local, "Bloco A");
+    assert.equal(fone.local, "Bloco A, corredor");
     assert.equal(fone.foto, "/uploads/primeira.png");
     assert.equal(servico.buscar({ q: `${marca} mochila` })[0].foto, null);
   });
@@ -189,20 +196,19 @@ describe("ItemService.buscar (RF03.1 a RF03.3)", () => {
 
   test("entradas inválidas", () => {
     assert.throws(() => servico.buscar({ categoria: "abc" }), erroDeNegocio(400, "categoria"));
-    assert.throws(() => servico.buscar({ local: "0" }), erroDeNegocio(400, "local"));
     assert.throws(() => servico.buscar({ q: "a".repeat(101) }), erroDeNegocio(400, "100"));
     assert.throws(() => servico.buscar({ de: "2026-10-10", ate: "2026-10-01" }), erroDeNegocio(400, "inicial"));
   });
 });
 
 describe("ItemService.detalhar (RF03.5)", () => {
-  test("público vê DISPONIVEL e EM_REIVINDICACAO, com nomes e fotos", () => {
+  test("público vê DISPONIVEL e EM_REIVINDICACAO, com categoria, local e fotos", () => {
     for (const status of [StatusItem.DISPONIVEL, StatusItem.EM_REIVINDICACAO]) {
-      const id = criarItem({ registradoPor: aluno.id, status, categoriaId: 2, localId: 3 });
+      const id = criarItem({ registradoPor: aluno.id, status, categoriaId: 2, local: "Biblioteca, 2º andar" });
       const d = servico.detalhar(id, null);
       assert.equal(d.status, status);
       assert.equal(d.categoria, "Documentos");
-      assert.equal(d.local, "Biblioteca");
+      assert.equal(d.local, "Biblioteca, 2º andar");
       assert.deepEqual(d.fotos, []);
     }
   });
@@ -231,14 +237,12 @@ describe("ItemService.lerId", () => {
   });
 });
 
-describe("Categorias e locais (RF02.3)", () => {
+describe("Categorias (RF02.3)", () => {
   const categorias = new CategoriaRepository();
-  const locais = new LocalRepository();
 
-  test("listas em ordem alfabética", () => {
+  test("lista em ordem alfabética", () => {
     const nomes = categorias.listarTodas().map((c) => c.getNome());
     assert.deepEqual(nomes, [...nomes].sort((a, b) => a.localeCompare(b, "pt-BR")));
-    assert.equal(locais.listarTodos()[0].getNome(), "Biblioteca");
   });
 
   test("criar e recusar nome repetido, sem diferenciar maiúsculas", () => {
@@ -246,13 +250,9 @@ describe("Categorias e locais (RF02.3)", () => {
     assert.ok(nova.getId());
     assert.equal(categorias.buscarPorId(nova.getId() as number)?.getNome(), "Livros");
     assert.throws(() => categorias.salvar(new Categoria("LIVROS")), erroDeNegocio(409));
-
-    assert.ok(locais.salvar(new Local("Auditório")).getId());
-    assert.throws(() => locais.salvar(new Local("biblioteca")), erroDeNegocio(409));
   });
 
   test("buscarPorId de inexistente devolve null", () => {
     assert.equal(categorias.buscarPorId(99999), null);
-    assert.equal(locais.buscarPorId(99999), null);
   });
 });

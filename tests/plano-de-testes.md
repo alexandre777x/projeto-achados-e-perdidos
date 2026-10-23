@@ -13,7 +13,7 @@ Os 18 casos foram executados **pela API** (requisições HTTP direto ao servidor
 | CT03 | RF01.3 | Login com senha errada | Acesso negado, sem iniciar sessão | 401 "E-mail ou senha inválidos."; `/api/auth/eu` responde 401 | Aprovado |
 | CT04 | RF02.2 | Registro de item com 4 fotos | Sistema recusa (máximo de 3 fotos) | 400 "Envie no máximo 3 arquivos."; nenhum arquivo fica em `uploads/` | Aprovado |
 | CT05 | RF02.4 | Registro com data do achado no futuro | Sistema recusa | 400 "A data do achado não pode ser futura." | Aprovado |
-| CT06 | RF03.2 | Busca com categoria e local ao mesmo tempo | Lista só os itens que atendem aos dois filtros | Só o item que atende aos dois filtros | Aprovado |
+| CT06 | RF03.2 | Busca com categoria e uma palavra do local ao mesmo tempo (revisado pela MR01: o local virou texto livre) | Lista só os itens que atendem aos dois critérios | Só o item da categoria escolhida cujo local tem a palavra (teste automático em `ItemService.test.ts`) | Aprovado |
 | CT07 | RF03.4 | Busca sem nenhum resultado | Mensagem clara de que nada foi encontrado | API devolve lista vazia; a mensagem é montada por `itens.html` | Aprovado na API; conferir a tela |
 | CT08 | RF04.6 | Mesmo usuário reivindica o mesmo item duas vezes | Segunda tentativa é recusada | 409 "Você já tem uma reivindicação aberta para este item." | Aprovado |
 | CT09 | RF04.4 | Administrador rejeita reivindicação sem informar o motivo | Sistema exige o motivo | 400 "Informe o motivo da rejeição (até 500 caracteres)." | Aprovado |
@@ -37,7 +37,7 @@ Testes que olham o código: cobrem os desvios (if/else) das regras de negócio R
 Na pasta `server/`:
 
 ```bash
-npm test                # roda os 226 testes (cerca de 4 segundos)
+npm test                # roda os 237 testes (cerca de 4 segundos)
 npm run test:cobertura  # roda e mostra a cobertura de linhas e de desvios por arquivo
 ```
 
@@ -55,6 +55,7 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 | `test/services/ItemService.test.ts` | Service + banco | Registro, manutenção (RF02.6), busca com todos os filtros (RF03) e detalhe por perfil |
 | `test/services/ReivindicacaoService.test.ts` | Service + banco | Abrir, rejeitar com e sem outras abertas, quem pode decidir, mensagens e provas |
 | `test/services/autenticacao.test.ts` | Service + banco | Cadastro (RF01.1, RF01.2, RF01.5), login (CT02, CT03) e recuperação de senha (CT12 a CT14) |
+| `test/database/migracao.test.ts` | Banco | Migração da MR01 (local em texto livre): monta um banco no formato antigo e confere que nenhum dado se perde e que as ligações entre tabelas continuam valendo |
 | `test/http.test.ts` | API inteira | Servidor de verdade: login obrigatório no site inteiro (CT19), middlewares de login e perfil (CT11), upload (CT04, CT15, CT16), erros 400/404/500 e o fluxo completo até o CSV |
 
 ### Regras de negócio
@@ -69,11 +70,11 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 
 ### Resultado de 23/10/2026
 
-**226 testes, 226 aprovados**, repetidos três vezes sem falha.
+**237 testes, 237 aprovados**, repetidos três vezes sem falha.
 
 | Cobertura (`npm run test:cobertura`) | Linhas | Desvios (branches) | Funções |
 | --- | --- | --- | --- |
-| Total | 96,9% | 93,2% | 90,0% |
+| Total | 96,9% | 93,1% | 90,1% |
 
 Os services (onde ficam as regras) e os models principais têm de 96% a 99% das linhas cobertas. Na leitura do relatório:
 

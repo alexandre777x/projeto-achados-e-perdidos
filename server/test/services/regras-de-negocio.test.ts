@@ -203,7 +203,7 @@ describe("RN05: toda mudança de status registra usuário, data e hora", () => {
   test("ciclo completo: registro, recebimento, reivindicação, rejeição, nova reivindicação, aprovação e devolução", () => {
     const quemAchou = aluno();
     const item = itens.registrar(
-      { titulo: "Celular", descricao: "Preto", dataAchado: "2026-10-01", categoriaId: 1, localId: 1 },
+      { titulo: "Celular", descricao: "Preto", dataAchado: "2026-10-01", categoriaId: 1, local: "Cantina, mesa do canto" },
       ["foto.png"],
       quemAchou
     );

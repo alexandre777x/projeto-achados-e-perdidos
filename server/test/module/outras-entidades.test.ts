@@ -5,7 +5,6 @@ import { PerfilUsuario } from "../../src/module/PerfilUsuario";
 import { Devolucao } from "../../src/module/Devolucao";
 import { TipoDocumento } from "../../src/module/TipoDocumento";
 import { Categoria } from "../../src/module/Categoria";
-import { Local } from "../../src/module/Local";
 import { Mensagem } from "../../src/module/Mensagem";
 import { Foto } from "../../src/module/Foto";
 import { ProvaPosse } from "../../src/module/ProvaPosse";
@@ -93,16 +92,14 @@ describe("Devolucao (RF05.2, RNF10)", () => {
   });
 });
 
-describe("Categoria e Local (RF02.3)", () => {
-  for (const [nome, Classe] of [["Categoria", Categoria], ["Local", Local]] as const) {
-    test(`${nome}: nome de 2 a 80 caracteres, sem espaços nas pontas`, () => {
-      assert.equal(new Classe("  Livros  ").getNome(), "Livros");
-      assert.throws(() => new Classe("A"), erroDeNegocio(400));
-      assert.throws(() => new Classe("a".repeat(81)), erroDeNegocio(400));
-      assert.throws(() => new Classe(undefined as unknown as string), erroDeNegocio(400));
-      assert.deepEqual(new Classe("Livros", 3).toJSON(), { id: 3, nome: "Livros" });
-    });
-  }
+describe("Categoria (RF02.3)", () => {
+  test("nome de 2 a 80 caracteres, sem espaços nas pontas", () => {
+    assert.equal(new Categoria("  Livros  ").getNome(), "Livros");
+    assert.throws(() => new Categoria("A"), erroDeNegocio(400));
+    assert.throws(() => new Categoria("a".repeat(81)), erroDeNegocio(400));
+    assert.throws(() => new Categoria(undefined as unknown as string), erroDeNegocio(400));
+    assert.deepEqual(new Categoria("Livros", 3).toJSON(), { id: 3, nome: "Livros" });
+  });
 });
 
 describe("Mensagem (RF04.3)", () => {

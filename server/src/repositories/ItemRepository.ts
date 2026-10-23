@@ -12,8 +12,8 @@ interface LinhaItem {
   data_achado: string;
   status: StatusItem;
   data_registro: string;
+  local_encontrado: string;
   categoria_id: number;
-  local_id: number;
   registrado_por: number;
 }
 
@@ -36,13 +36,12 @@ interface LinhaFoto {
 /** Filtros da busca (RF03.2 e RF03.3). Os que vierem vazios não restringem nada. */
 export interface FiltrosBusca {
   categoriaId: number | null;
-  localId: number | null;
   periodo: PeriodoDeDatas;
   palavras: string[];
   limite: number;
 }
 
-/** Um item na lista de resultados: nomes no lugar dos ids e a primeira foto. */
+/** Um item na lista de resultados: nome da categoria no lugar do id e a primeira foto. */
 export interface ItemResumo {
   id: number;
   titulo: string;
@@ -58,7 +57,7 @@ export class ItemRepository extends Repositorio {
   /**
    * RF03.1 a RF03.3: só itens disponíveis, dos registrados mais recentemente para os
    * mais antigos. O período é da data do achado. Cada palavra precisa aparecer no
-   * título ou na descrição.
+   * título, na descrição ou no local (texto livre: "cantina" acha "perto da cantina").
    */
   public buscar(filtros: FiltrosBusca): ItemResumo[] {
     const condicoes = ["i.status = ?", "i.data_achado BETWEEN ? AND ?"];
@@ -68,24 +67,21 @@ export class ItemRepository extends Repositorio {
       condicoes.push("i.categoria_id = ?");
       valores.push(filtros.categoriaId);
     }
-    if (filtros.localId !== null) {
-      condicoes.push("i.local_id = ?");
-      valores.push(filtros.localId);
-    }
     for (const palavra of filtros.palavras) {
       // % e _ digitados pelo usuário valem como letra, não como curinga do LIKE
       const padrao = `%${palavra.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
-      condicoes.push("(i.titulo LIKE ? ESCAPE '\\' OR i.descricao LIKE ? ESCAPE '\\')");
-      valores.push(padrao, padrao);
+      condicoes.push(
+        "(i.titulo LIKE ? ESCAPE '\\' OR i.descricao LIKE ? ESCAPE '\\' OR i.local_encontrado LIKE ? ESCAPE '\\')"
+      );
+      valores.push(padrao, padrao, padrao);
     }
 
     return this.db
       .prepare<(string | number)[], LinhaResumo>(
-        `SELECT i.id, i.titulo, i.data_achado, i.status, c.nome AS categoria, l.nome AS local,
+        `SELECT i.id, i.titulo, i.data_achado, i.status, c.nome AS categoria, i.local_encontrado AS local,
                 (SELECT f.caminho FROM foto f WHERE f.item_id = i.id ORDER BY f.id LIMIT 1) AS foto
          FROM item i
          JOIN categoria c ON c.id = i.categoria_id
-         JOIN local l ON l.id = i.local_id
          WHERE ${condicoes.join(" AND ")}
          ORDER BY i.data_registro DESC, i.id DESC
          LIMIT ?`
@@ -107,7 +103,7 @@ export class ItemRepository extends Repositorio {
     const id = this.db.transaction(() => {
       const resultado = this.db
         .prepare(
-          `INSERT INTO item (titulo, descricao, data_achado, status, categoria_id, local_id, registrado_por)
+          `INSERT INTO item (titulo, descricao, data_achado, status, categoria_id, local_encontrado, registrado_por)
            VALUES (?, ?, ?, ?, ?, ?, ?)`
         )
         .run(
@@ -116,7 +112,7 @@ export class ItemRepository extends Repositorio {
           item.getDataAchado(),
           item.getStatus(),
           item.getCategoriaId(),
-          item.getLocalId(),
+          item.getLocal(),
           item.getRegistradoPor()
         );
       const itemId = Number(resultado.lastInsertRowid);
@@ -166,7 +162,7 @@ export class ItemRepository extends Repositorio {
   public atualizar(item: Item): void {
     this.db
       .prepare(
-        `UPDATE item SET titulo = ?, descricao = ?, data_achado = ?, categoria_id = ?, local_id = ?
+        `UPDATE item SET titulo = ?, descricao = ?, data_achado = ?, categoria_id = ?, local_encontrado = ?
          WHERE id = ?`
       )
       .run(
@@ -174,7 +170,7 @@ export class ItemRepository extends Repositorio {
         item.getDescricao(),
         item.getDataAchado(),
         item.getCategoriaId(),
-        item.getLocalId(),
+        item.getLocal(),
         item.getId()
       );
   }
@@ -212,7 +208,7 @@ export class ItemRepository extends Repositorio {
       status: linha.status,
       dataRegistro: linha.data_registro,
       categoriaId: linha.categoria_id,
-      localId: linha.local_id,
+      local: linha.local_encontrado,
       registradoPor: linha.registrado_por,
     });
   }

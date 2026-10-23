@@ -7,7 +7,7 @@ export interface DadosItem {
   descricao: string;
   dataAchado: string; // AAAA-MM-DD
   categoriaId: number;
-  localId: number;
+  local: string; // onde foi encontrado, em texto livre
   registradoPor: number;
   status?: StatusItem;
   id?: number;
@@ -17,6 +17,7 @@ export interface DadosItem {
 /** Objeto encontrado no campus (RF02). */
 export class Item {
   public static readonly MAX_FOTOS = 3;
+  public static readonly LOCAL_MAXIMO = 150;
 
   /** Mudanças de status permitidas pelo ciclo de vida do SRS. */
   private static readonly TRANSICOES: Record<StatusItem, StatusItem[]> = {
@@ -32,13 +33,14 @@ export class Item {
   private dataAchado: string;
   private status: StatusItem;
   private categoriaId: number;
-  private localId: number;
+  private local: string;
   private registradoPor: number;
   private dataRegistro?: string;
 
   constructor(dados: DadosItem) {
     const titulo = String(dados.titulo ?? "").trim();
     const descricao = String(dados.descricao ?? "").trim();
+    const local = String(dados.local ?? "").trim();
 
     if (titulo.length < 3 || titulo.length > 80) {
       throw new ErroDeNegocio("O título precisa ter entre 3 e 80 caracteres.");
@@ -46,13 +48,16 @@ export class Item {
     if (descricao.length === 0 || descricao.length > 1000) {
       throw new ErroDeNegocio("A descrição precisa ter entre 1 e 1000 caracteres.");
     }
+    if (local.length < 3 || local.length > Item.LOCAL_MAXIMO) {
+      throw new ErroDeNegocio(`Descreva onde o item foi encontrado (de 3 a ${Item.LOCAL_MAXIMO} caracteres).`);
+    }
     Item.validarDataAchado(dados.dataAchado);
 
     this.titulo = titulo;
     this.descricao = descricao;
     this.dataAchado = dados.dataAchado;
     this.categoriaId = dados.categoriaId;
-    this.localId = dados.localId;
+    this.local = local;
     this.registradoPor = dados.registradoPor;
     this.status = dados.status ?? StatusItem.AGUARDANDO_RECEBIMENTO;
     this.id = dados.id;
@@ -117,8 +122,8 @@ export class Item {
     return this.categoriaId;
   }
 
-  public getLocalId(): number {
-    return this.localId;
+  public getLocal(): string {
+    return this.local;
   }
 
   public getRegistradoPor(): number {
@@ -142,7 +147,7 @@ export class Item {
       dataAchado: this.dataAchado,
       status: this.status,
       categoriaId: this.categoriaId,
-      localId: this.localId,
+      local: this.local,
       dataRegistro: this.dataRegistro,
     };
   }

@@ -81,7 +81,7 @@ function formularioItem(fotos: [Buffer, string, string][]) {
   f.set("descricao", "Garrafa térmica");
   f.set("dataAchado", "2026-10-01");
   f.set("categoriaId", "1");
-  f.set("localId", "1");
+  f.set("local", "Bloco A, perto da escada");
   for (const [conteudo, tipo, nome] of fotos) f.append("fotos", arquivo(conteudo, tipo), nome);
   return f;
 }
@@ -93,7 +93,7 @@ describe("rotas básicas e tratamento de erros", () => {
     const r = await new Navegador().pedir("/api/saude");
     assert.equal(r.status, 200);
     assert.equal(r.corpo.status, "ok");
-    assert.ok((r.corpo.tabelas as number) >= 11);
+    assert.ok((r.corpo.tabelas as number) >= 10); // 10 desde que a tabela local saiu
   });
 
   test("rota /api inexistente: 404 em JSON", async () => {
@@ -305,19 +305,35 @@ describe("rotas de itens: ids e ordem das rotas", () => {
     const { n } = await logado(PerfilUsuario.ADMINISTRADOR);
     const id = criarItem({ registradoPor: autor.id, status: StatusItem.AGUARDANDO_RECEBIMENTO });
     assert.equal((await n.pedir(`/api/itens/${id}/recebimento`, { method: "PATCH" })).corpo.status, StatusItem.DISPONIVEL);
-    const editado = await n.json(`/api/itens/${id}`, "PUT", { titulo: "Novo título", descricao: "x", dataAchado: "2026-10-01", categoriaId: 2, localId: 2 });
+    const editado = await n.json(`/api/itens/${id}`, "PUT", { titulo: "Novo título", descricao: "x", dataAchado: "2026-10-01", categoriaId: 2, local: "Portaria, no balcão" });
     assert.equal(editado.corpo.titulo, "Novo título");
-    assert.equal((await n.pedir(`/api/itens/${id}`)).corpo.categoria, "Documentos");
+    const detalhe = await n.pedir(`/api/itens/${id}`);
+    assert.equal(detalhe.corpo.categoria, "Documentos");
+    assert.equal(detalhe.corpo.local, "Portaria, no balcão");
   });
 
   test("categorias: listar exige login; criar, só administrador", async () => {
-    assert.equal((await new Navegador().pedir("/api/referencias/locais")).status, 401);
+    assert.equal((await new Navegador().pedir("/api/referencias/categorias")).status, 401);
     const { n: aluno } = await logado(PerfilUsuario.ALUNO);
-    assert.equal((await aluno.pedir("/api/referencias/locais")).status, 200);
-    assert.equal((await aluno.json("/api/referencias/locais", "POST", { nome: "Quadra" })).status, 403);
+    assert.equal((await aluno.pedir("/api/referencias/categorias")).status, 200);
+    assert.equal((await aluno.json("/api/referencias/categorias", "POST", { nome: "Quadra" })).status, 403);
     const { n } = await logado(PerfilUsuario.ADMINISTRADOR);
     assert.equal((await n.json("/api/referencias/categorias", "POST", { nome: "Livros" })).status, 201);
-    assert.equal((await n.json("/api/referencias/locais", "POST", { nome: "Ginásio" })).status, 201);
+  });
+
+  test("a lista de locais não existe mais: o local é texto no item", async () => {
+    const { n } = await logado(PerfilUsuario.ADMINISTRADOR);
+    assert.equal((await n.pedir("/api/referencias/locais")).status, 404);
+    assert.equal((await n.json("/api/referencias/locais", "POST", { nome: "Ginásio" })).status, 404);
+  });
+
+  test("registro sem o local escrito: 400", async () => {
+    const { n } = await logado(PerfilUsuario.ALUNO);
+    const f = formularioItem([[PNG, "image/png", "a.png"]]);
+    f.delete("local");
+    const r = await n.pedir("/api/itens", { method: "POST", body: f });
+    assert.equal(r.status, 400);
+    assert.match(String(r.corpo.erro), /onde o item foi encontrado/);
   });
 });
 
@@ -485,7 +501,7 @@ describe("login obrigatório: o site inteiro exige conta", () => {
 
   test("a API de leitura também exige login", async () => {
     const id = criarItem({ registradoPor: autor.id });
-    for (const rota of ["/api/itens", `/api/itens/${id}`, "/api/referencias/categorias", "/api/referencias/locais"]) {
+    for (const rota of ["/api/itens", `/api/itens/${id}`, "/api/referencias/categorias"]) {
       assert.equal((await new Navegador().pedir(rota)).status, 401, rota);
     }
   });

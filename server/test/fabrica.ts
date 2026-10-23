@@ -13,7 +13,7 @@ function db() {
   return Database.getInstancia().getConexao();
 }
 
-/** Cria as tabelas e os dados iniciais (6 categorias e 6 locais). */
+/** Cria as tabelas e os dados iniciais (6 categorias). */
 export function prepararBanco(): void {
   Database.getInstancia().inicializar();
 }
@@ -38,7 +38,7 @@ export interface OpcoesItem {
   descricao?: string;
   dataAchado?: string;
   categoriaId?: number;
-  localId?: number;
+  local?: string;
   registradoPor: number;
   dataRegistro?: string;
 }
@@ -47,7 +47,7 @@ export interface OpcoesItem {
 export function criarItem(opcoes: OpcoesItem): number {
   const resultado = db()
     .prepare(
-      `INSERT INTO item (titulo, descricao, data_achado, status, categoria_id, local_id, registrado_por, data_registro)
+      `INSERT INTO item (titulo, descricao, data_achado, status, categoria_id, local_encontrado, registrado_por, data_registro)
        VALUES (?, ?, ?, ?, ?, ?, ?, COALESCE(?, datetime('now')))`
     )
     .run(
@@ -56,7 +56,7 @@ export function criarItem(opcoes: OpcoesItem): number {
       opcoes.dataAchado ?? "2026-10-01",
       opcoes.status ?? StatusItem.DISPONIVEL,
       opcoes.categoriaId ?? 1,
-      opcoes.localId ?? 1,
+      opcoes.local ?? "Bloco A, perto da escada",
       opcoes.registradoPor,
       opcoes.dataRegistro ?? null
     );

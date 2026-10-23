@@ -76,12 +76,12 @@
             <select id="ed-categoria" name="categoriaId" required></select>
           </div>
           <div>
-            <label for="ed-local">Local</label>
-            <select id="ed-local" name="localId" required></select>
+            <label for="ed-data">Data do achado</label>
+            <input type="date" id="ed-data" name="dataAchado" required>
           </div>
         </div>
-        <label for="ed-data">Data do achado</label>
-        <input type="date" id="ed-data" name="dataAchado" required>
+        <label for="ed-local">Onde foi encontrado</label>
+        <input type="text" id="ed-local" name="local" required minlength="3" maxlength="150">
         <button type="submit">Salvar alterações</button>
         <button type="button" class="botao-claro" id="cancelar-edicao">Cancelar</button>
       </form>
@@ -255,9 +255,7 @@
 
     async function prepararAdministracao() {
       document.getElementById('administracao').hidden = false;
-      const [categorias, locais] = await Promise.all([api('/referencias/categorias'), api('/referencias/locais')]);
-      for (const c of categorias) formEdicao.categoriaId.append(new Option(c.nome, c.id));
-      for (const l of locais) formEdicao.localId.append(new Option(l.nome, l.id));
+      for (const c of await api('/referencias/categorias')) formEdicao.categoriaId.append(new Option(c.nome, c.id));
       formEdicao.dataAchado.max = hoje();
     }
 
@@ -273,7 +271,7 @@
       }
     }
 
-    // As rotas de manutenção devolvem só os ids de categoria e local; o detalhe traz os nomes.
+    // As rotas de manutenção devolvem só o id da categoria; o detalhe traz o nome.
     const recarregar = () => api(`/itens/${item.id}`);
 
     document.getElementById('confirmar').addEventListener('click', () =>
@@ -284,7 +282,7 @@
       formEdicao.titulo.value = item.titulo;
       formEdicao.descricao.value = item.descricao;
       formEdicao.categoriaId.value = item.categoriaId;
-      formEdicao.localId.value = item.localId;
+      formEdicao.local.value = item.local;
       formEdicao.dataAchado.value = item.dataAchado;
       formEdicao.hidden = false;
       formEdicao.titulo.focus();

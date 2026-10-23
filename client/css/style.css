@@ -539,6 +539,12 @@ th {
   color: var(--texto-suave);
 }
 
+/* Dica curta logo abaixo de um campo */
+.dica-campo {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+}
+
 @media (max-width: 480px) {
   .acoes {
     grid-template-columns: 1fr;
