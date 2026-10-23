@@ -285,14 +285,14 @@
           ['Item', (i) => i.titulo],
           ['Categoria', (i) => i.categoria],
           ['Local', (i) => i.local],
-          ['Devolvido em', (i) => i.data_devolucao],
-          ['Dias', (i) => i.dias_ate_devolucao],
+          ['Devolvido em', (i) => i.dataDevolucao],
+          ['Dias', (i) => i.diasAteDevolucao],
         ], r.devolvidos);
         preencherTabela(document.getElementById('tabela-disponiveis'), [
           ['Item', (i) => i.titulo],
           ['Categoria', (i) => i.categoria],
           ['Local', (i) => i.local],
-          ['Registrado em', (i) => i.data_registro],
+          ['Registrado em', (i) => i.dataRegistro],
           ['Situação', (i) => situacoes[i.status]],
         ], r.disponiveis);
         document.getElementById('relatorio').hidden = false;
