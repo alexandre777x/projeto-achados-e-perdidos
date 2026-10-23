@@ -12,6 +12,8 @@ import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 import { UploadMiddleware } from "./middlewares/UploadMiddleware";
 import { Foto } from "./module/Foto";
 import { Item } from "./module/Item";
+import { ProvaPosse } from "./module/ProvaPosse";
+import { Reivindicacao } from "./module/Reivindicacao";
 
 /**
  * Monta a aplicação Express: sessão, arquivos do front-end (pasta client/),
@@ -49,6 +51,18 @@ export class App {
 
   private readonly receberFotos: express.RequestHandler = (req, res, next) =>
     this.uploadDeFotos.tratar(req, res, next);
+
+  /** Provas de posse (RF04.2): até 3, JPG, PNG ou PDF de até 5 MB, na pasta privada. */
+  private readonly uploadDeProvas = new UploadMiddleware({
+    pasta: Configuracao.pastaProvas,
+    campo: "provas",
+    tiposAceitos: ProvaPosse.TIPOS_ACEITOS,
+    tamanhoMaximo: ProvaPosse.TAMANHO_MAXIMO,
+    maximoDeArquivos: Reivindicacao.MAX_PROVAS,
+  });
+
+  private readonly receberProvas: express.RequestHandler = (req, res, next) =>
+    this.uploadDeProvas.tratar(req, res, next);
 
   constructor() {
     this.app = express();
@@ -130,9 +144,12 @@ export class App {
   /** RF04 */
   private configurarRotasDeReivindicacoes(): void {
     const c = this.reivindicacaoController;
-    this.api.post("/reivindicacoes", this.exigirLogin, (req, res) => c.abrir(req, res));
+    this.api.post("/reivindicacoes", this.exigirLogin, this.receberProvas, (req, res) => c.abrir(req, res));
     this.api.get("/reivindicacoes/minhas", this.exigirLogin, (req, res) => c.listarMinhas(req, res));
     this.api.get("/reivindicacoes", this.exigirAdmin, (req, res) => c.listarAbertas(req, res));
+    // Depois de /minhas, senão "minhas" seria lido como um id.
+    this.api.get("/reivindicacoes/:id", this.exigirLogin, (req, res) => c.detalhar(req, res));
+    this.api.get("/reivindicacoes/:id/provas/:provaId", this.exigirLogin, (req, res) => c.baixarProva(req, res));
     this.api.get("/reivindicacoes/:id/mensagens", this.exigirLogin, (req, res) => c.listarMensagens(req, res));
     this.api.post("/reivindicacoes/:id/mensagens", this.exigirLogin, (req, res) => c.enviarMensagem(req, res));
     this.api.patch("/reivindicacoes/:id/aprovar", this.exigirAdmin, (req, res) => c.aprovar(req, res));

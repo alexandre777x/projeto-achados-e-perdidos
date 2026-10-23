@@ -11,4 +11,12 @@ export abstract class Repositorio {
   constructor() {
     this.db = Database.getInstancia().getConexao();
   }
+
+  /**
+   * Roda tudo de uma vez: se algo falhar, nada é gravado. Como todos os repositórios
+   * usam a mesma conexão, a transação vale também para chamadas a outros repositórios.
+   */
+  public emTransacao<T>(operacao: () => T): T {
+    return this.db.transaction(operacao)();
+  }
 }

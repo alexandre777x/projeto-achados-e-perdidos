@@ -1,3 +1,6 @@
+import path from "path";
+import { Configuracao } from "../config/Configuracao";
+
 /**
  * Arquivo que o reivindicante anexa para provar que é o dono (RF04.2): nota fiscal, foto antiga etc.
  * Até 3 por reivindicação, JPG, PNG ou PDF de até 5 MB. Fica na pasta privada provas/:
@@ -25,6 +28,11 @@ export class ProvaPosse {
 
   public getCaminho(): string {
     return this.caminho;
+  }
+
+  /** Caminho completo do arquivo, dentro da pasta privada de provas. */
+  public getCaminhoNoDisco(): string {
+    return path.join(Configuracao.pastaProvas, this.caminho);
   }
 
   public getNomeOriginal(): string {

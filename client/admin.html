@@ -21,8 +21,16 @@
   <main>
     <h1>Administração</h1>
     <div class="cartao">
-      <p class="suave">Página a construir (edição de itens do RF02.6, RF04.4 e RF05.1).</p>
+      <p class="suave">Página a construir (RF05.1: registrar devolução).</p>
     </div>
+
+    <section class="cartao">
+      <h2>Reivindicações abertas</h2>
+      <p class="suave">Das mais antigas para as mais novas. Abra para ver as respostas, as provas e conversar.</p>
+      <ul class="lista-simples" id="lista-reivindicacoes"></ul>
+      <p class="suave" id="reivindicacoes-vazio" hidden>Nenhuma reivindicação esperando análise.</p>
+      <p id="aviso-reivindicacoes" role="status"></p>
+    </section>
 
     <section class="cartao">
       <h2>Itens aguardando recebimento</h2>
@@ -91,6 +99,28 @@
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
   <script>
+    // RF04.4: fila de reivindicações para analisar
+    api('/reivindicacoes')
+      .then((reivindicacoes) => {
+        document.getElementById('reivindicacoes-vazio').hidden = reivindicacoes.length > 0;
+        document.getElementById('lista-reivindicacoes').replaceChildren(...reivindicacoes.map((r) => {
+          const li = document.createElement('li');
+          const link = document.createElement('a');
+          link.href = `/reivindicacao.html?id=${r.id}`;
+          link.textContent = `${r.itemTitulo} (item nº ${r.itemId})`;
+          const quem = document.createElement('span');
+          quem.className = 'suave';
+          quem.textContent = `${r.reivindicante} · ${new Date(r.dataAbertura.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}`;
+          li.append(link, quem);
+          return li;
+        }));
+      })
+      .catch((erro) => {
+        const aviso = document.getElementById('aviso-reivindicacoes');
+        aviso.textContent = erro.message;
+        aviso.className = 'erro';
+      });
+
     // RF02.6: confirmar o recebimento físico ou excluir itens registrados por outros perfis
     const avisoAguardando = document.getElementById('aviso-aguardando');
 

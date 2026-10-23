@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Reivindicação – CampusLost</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body data-exige-login>
+  <header>
+    <a class="marca" href="/">CampusLost</a>
+    <nav>
+      <a href="/itens.html">Itens encontrados</a>
+      <a href="/novo-item.html">Registrar item</a>
+      <a href="/minhas-reivindicacoes.html">Minhas reivindicações</a>
+      <a href="/admin.html">Administração</a>
+      <a href="/login.html">Entrar</a>
+    </nav>
+  </header>
+
+  <main>
+    <p><a id="voltar" href="/minhas-reivindicacoes.html">← Voltar</a></p>
+    <p id="aviso" role="status"></p>
+
+    <article class="cartao" id="detalhes" hidden>
+      <h1>Reivindicação nº <span id="numero"></span></h1>
+      <span id="selo" class="selo"></span>
+      <dl class="dados">
+        <dt>Item</dt><dd><a id="item"></a></dd>
+        <dt>Quem pediu</dt><dd id="reivindicante"></dd>
+        <dt>Aberta em</dt><dd id="dataAbertura"></dd>
+        <dt id="rotulo-decisao" hidden>Decidida em</dt><dd id="dataDecisao" hidden></dd>
+        <dt id="rotulo-motivo" hidden>Motivo da rejeição</dt><dd id="motivo" hidden></dd>
+      </dl>
+      <p id="proximo-passo"></p>
+
+      <h2>Respostas de validação</h2>
+      <p id="respostas" class="texto-livre"></p>
+
+      <h2>Provas de posse</h2>
+      <ul id="provas"></ul>
+      <p class="suave" id="sem-provas" hidden>Nenhum arquivo anexado.</p>
+    </article>
+
+    <!-- RF04.4: decisão da administração -->
+    <section class="cartao" id="decisao" hidden>
+      <h2>Decisão</h2>
+      <p class="suave">Ao aprovar, as outras reivindicações abertas deste item são rejeitadas.</p>
+      <button type="button" id="aprovar">Aprovar</button>
+      <form id="form-rejeicao" novalidate>
+        <label for="motivo-rejeicao">Motivo da rejeição</label>
+        <textarea id="motivo-rejeicao" name="motivo" rows="2" maxlength="500" required></textarea>
+        <button type="submit" class="botao-claro">Rejeitar</button>
+      </form>
+      <p id="aviso-decisao" role="status"></p>
+    </section>
+
+    <!-- RF04.3: conversa entre o reivindicante e a administração -->
+    <section class="cartao" id="secao-conversa" hidden>
+      <h2>Conversa com a <span id="com-quem">administração</span></h2>
+      <div class="conversa" id="conversa"></div>
+      <p class="suave" id="conversa-vazia" hidden>Nenhuma mensagem ainda.</p>
+      <form id="form-mensagem" novalidate>
+        <label for="texto">Nova mensagem</label>
+        <textarea id="texto" name="texto" rows="3" maxlength="1000" required></textarea>
+        <button type="submit">Enviar</button>
+      </form>
+      <p id="aviso-mensagem" role="status"></p>
+    </section>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/menu.js"></script>
+  <script>
+    // RF04.3, RF04.4 e RF04.7: acompanhar, conversar e decidir
+    const id = new URLSearchParams(location.search).get('id');
+    const ROTULOS = { ABERTA: 'Aberta', APROVADA: 'Aprovada', REJEITADA: 'Rejeitada' };
+    let souAdmin = false;
+
+    function mostrar(elemento, texto, ehErro) {
+      const el = document.getElementById(elemento);
+      el.textContent = texto;
+      el.className = ehErro ? 'erro' : '';
+    }
+
+    function dataHora(texto) {
+      // O banco guarda em UTC ("AAAA-MM-DD HH:MM:SS"); mostra no horário de quem está vendo
+      return new Date(texto.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    }
+
+    function preencher(id, texto) {
+      const el = document.getElementById(id);
+      el.textContent = texto ?? '';
+      return el;
+    }
+
+    function exibir(r) {
+      preencher('numero', r.id);
+      const selo = preencher('selo', ROTULOS[r.status]);
+      selo.className = `selo selo-${r.status.toLowerCase()}`;
+      const item = preencher('item', `${r.item.titulo} (nº ${r.item.id})`);
+      item.href = `/item.html?id=${r.item.id}`;
+      preencher('reivindicante', r.reivindicante);
+      preencher('dataAbertura', dataHora(r.dataAbertura));
+
+      for (const campo of ['rotulo-decisao', 'dataDecisao']) document.getElementById(campo).hidden = !r.dataDecisao;
+      if (r.dataDecisao) preencher('dataDecisao', dataHora(r.dataDecisao));
+      for (const campo of ['rotulo-motivo', 'motivo']) document.getElementById(campo).hidden = !r.motivoRejeicao;
+      preencher('motivo', r.motivoRejeicao);
+
+      const passos = {
+        ABERTA: 'A administração vai analisar suas respostas. Acompanhe a conversa abaixo.',
+        APROVADA: 'Retire o objeto na segurança do campus levando um documento com foto.',
+        REJEITADA: 'Se achar que houve engano, explique na conversa abaixo.',
+      };
+      preencher('proximo-passo', souAdmin ? '' : passos[r.status]);
+      preencher('respostas', r.respostasValidacao);
+
+      document.getElementById('sem-provas').hidden = r.provas.length > 0;
+      document.getElementById('provas').replaceChildren(...r.provas.map((prova) => {
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = `/api/reivindicacoes/${r.id}/provas/${prova.id}`;
+        link.textContent = prova.nomeOriginal;
+        li.append(link);
+        return li;
+      }));
+
+      document.getElementById('decisao').hidden = !(souAdmin && r.status === 'ABERTA');
+      document.getElementById('detalhes').hidden = false;
+    }
+
+    async function carregarMensagens() {
+      const mensagens = await api(`/reivindicacoes/${id}/mensagens`);
+      document.getElementById('conversa-vazia').hidden = mensagens.length > 0;
+      document.getElementById('conversa').replaceChildren(...mensagens.map((m) => {
+        const div = document.createElement('div');
+        div.className = m.minha ? 'mensagem mensagem-minha' : 'mensagem';
+        const autor = document.createElement('small');
+        autor.textContent = `${m.minha ? 'Você' : m.autor} · ${dataHora(m.dataEnvio)}`;
+        div.append(autor, m.texto);
+        return div;
+      }));
+    }
+
+    async function carregar() {
+      if (!id) return mostrar('aviso', 'Reivindicação não informada.', true);
+      const usuario = await api('/auth/eu').catch(() => null);
+      if (!usuario) return; // o menu.js já leva para o login
+      souAdmin = usuario.perfil === 'ADMINISTRADOR';
+      if (souAdmin) {
+        document.getElementById('voltar').href = '/admin.html';
+        preencher('com-quem', 'pessoa que reivindicou');
+      }
+      try {
+        exibir(await api(`/reivindicacoes/${encodeURIComponent(id)}`));
+        document.getElementById('secao-conversa').hidden = false;
+        await carregarMensagens();
+      } catch (erro) {
+        mostrar('aviso', erro.message, true);
+      }
+    }
+
+    async function decidir(acao, corpo, mensagem) {
+      mostrar('aviso-decisao', '');
+      try {
+        await api(`/reivindicacoes/${id}/${acao}`, { method: 'PATCH', body: corpo });
+        exibir(await api(`/reivindicacoes/${id}`));
+        mostrar('aviso-decisao', mensagem, false);
+        document.getElementById('decisao').hidden = false; // mantém o aviso visível
+        document.getElementById('aprovar').hidden = true;
+        document.getElementById('form-rejeicao').hidden = true;
+      } catch (erro) {
+        mostrar('aviso-decisao', erro.message, true);
+      }
+    }
+
+    document.getElementById('aprovar').addEventListener('click', () => {
+      if (!confirm('Aprovar esta reivindicação? As outras abertas para o mesmo item serão rejeitadas.')) return;
+      decidir('aprovar', undefined, 'Reivindicação aprovada. Registre a devolução quando a pessoa retirar o objeto.');
+    });
+
+    document.getElementById('form-rejeicao').addEventListener('submit', (evento) => {
+      evento.preventDefault();
+      const motivo = evento.target.motivo.value.trim();
+      if (!motivo) return mostrar('aviso-decisao', 'Informe o motivo da rejeição.', true);
+      decidir('rejeitar', { motivo }, 'Reivindicação rejeitada.');
+    });
+
+    document.getElementById('form-mensagem').addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      const formulario = evento.target;
+      const texto = formulario.texto.value.trim();
+      mostrar('aviso-mensagem', '');
+      if (!texto) return mostrar('aviso-mensagem', 'Escreva a mensagem.', true);
+      try {
+        await api(`/reivindicacoes/${id}/mensagens`, { method: 'POST', body: { texto } });
+        formulario.reset();
+        await carregarMensagens();
+      } catch (erro) {
+        mostrar('aviso-mensagem', erro.message, true);
+      }
+    });
+
+    carregar();
+  </script>
+</body>
+</html>

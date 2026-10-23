@@ -35,6 +35,25 @@
       </dl>
     </article>
 
+    <!-- RF04.1 e RF04.2: reivindicar o item -->
+    <section class="cartao" id="reivindicar" hidden>
+      <h2>Este item é seu?</h2>
+      <p id="reivindicar-situacao"></p>
+
+      <form id="form-reivindicacao" novalidate hidden>
+        <p class="suave">Responda o que puder sobre detalhes que <strong>não aparecem no anúncio</strong>.
+          A administração compara com o objeto antes de aprovar.</p>
+        <div id="perguntas"></div>
+
+        <label for="provas">Provas de posse (opcional: nota fiscal, foto antiga com o objeto...)</label>
+        <input type="file" id="provas" name="provas" accept="image/jpeg,image/png,application/pdf" multiple>
+        <p class="suave">Até 3 arquivos JPG, PNG ou PDF de até 5 MB. Só você e a administração conseguem abrir.</p>
+
+        <p id="aviso-reivindicacao" role="alert"></p>
+        <button type="submit">Enviar reivindicação</button>
+      </form>
+    </section>
+
     <!-- RF02.6: só aparece para a administração -->
     <section class="cartao" id="administracao" hidden>
       <h2>Administração</h2>
@@ -131,10 +150,104 @@
         return;
       }
 
-      // RF02.6: ferramentas da administração
       const usuario = await api('/auth/eu').catch(() => null);
+      prepararReivindicacao(usuario);
+      // RF02.6: ferramentas da administração
       if (usuario?.perfil === 'ADMINISTRADOR') prepararAdministracao();
     }
+
+    // RF04.2: perguntas sobre o que não aparece no anúncio. As respostas vão juntas num texto só.
+    const PERGUNTAS = [
+      'Marca, modelo ou tamanho',
+      'Cor ou detalhe que não aparece nas fotos',
+      'O que havia dentro ou junto do objeto',
+      'Marcas pessoais (nome, adesivo, arranhão, senha de bloqueio...)',
+      'Onde e quando você acha que perdeu',
+    ];
+    const formReivindicacao = document.getElementById('form-reivindicacao');
+    const avisoReivindicacao = document.getElementById('aviso-reivindicacao');
+
+    async function prepararReivindicacao(usuario) {
+      if (!['DISPONIVEL', 'EM_REIVINDICACAO'].includes(item.status)) return;
+      const secao = document.getElementById('reivindicar');
+      const situacao = document.getElementById('reivindicar-situacao');
+      secao.hidden = false;
+
+      if (!usuario) {
+        situacao.textContent = 'Entre na sua conta para pedir a devolução. ';
+        const link = document.createElement('a');
+        link.href = '/login.html?voltar=' + encodeURIComponent(location.pathname + location.search);
+        link.textContent = 'Entrar';
+        situacao.append(link);
+        return;
+      }
+
+      // RF04.6: quem já tem reivindicação aberta (ou aprovada) para o item vê o andamento
+      const minhas = await api('/reivindicacoes/minhas').catch(() => []);
+      const atual = minhas.find((r) => r.itemId === item.id && r.status !== 'REJEITADA');
+      if (atual) {
+        situacao.textContent = atual.status === 'APROVADA'
+          ? 'Sua reivindicação foi aprovada. '
+          : 'Você já reivindicou este item. ';
+        const link = document.createElement('a');
+        link.href = `/reivindicacao.html?id=${atual.id}`;
+        link.textContent = 'Ver andamento e conversar com a administração';
+        situacao.append(link);
+        return;
+      }
+
+      situacao.textContent = '';
+      document.getElementById('perguntas').replaceChildren(...PERGUNTAS.flatMap((pergunta, i) => {
+        const label = document.createElement('label');
+        label.htmlFor = `pergunta-${i}`;
+        label.textContent = pergunta;
+        const campo = document.createElement('textarea');
+        campo.id = `pergunta-${i}`;
+        campo.rows = 2;
+        campo.maxLength = 350;
+        campo.dataset.pergunta = pergunta;
+        return [label, campo];
+      }));
+      formReivindicacao.hidden = false;
+    }
+
+    formReivindicacao.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      mostrar(avisoReivindicacao, '');
+
+      const respostas = [...formReivindicacao.querySelectorAll('textarea')]
+        .filter((campo) => campo.value.trim())
+        .map((campo) => `${campo.dataset.pergunta}: ${campo.value.trim()}`)
+        .join('\n');
+      if (!respostas) return mostrar(avisoReivindicacao, 'Responda pelo menos uma pergunta.', true);
+      if (respostas.length > 2000) return mostrar(avisoReivindicacao, 'As respostas passaram de 2000 caracteres. Resuma um pouco.', true);
+
+      const provas = [...formReivindicacao.provas.files];
+      if (provas.length > 3) return mostrar(avisoReivindicacao, 'Anexe no máximo 3 arquivos.', true);
+      for (const prova of provas) {
+        if (!['image/jpeg', 'image/png', 'application/pdf'].includes(prova.type)) {
+          return mostrar(avisoReivindicacao, `${prova.name} não é JPG, PNG nem PDF.`, true);
+        }
+        if (prova.size > 5 * 1024 * 1024) return mostrar(avisoReivindicacao, `${prova.name} passa de 5 MB.`, true);
+      }
+
+      const dados = new FormData();
+      dados.set('itemId', item.id);
+      dados.set('respostasValidacao', respostas);
+      for (const prova of provas) dados.append('provas', prova);
+
+      const botao = formReivindicacao.querySelector('button');
+      botao.disabled = true;
+      botao.textContent = 'Enviando...';
+      try {
+        const reivindicacao = await api('/reivindicacoes', { method: 'POST', body: dados });
+        location.href = `/reivindicacao.html?id=${reivindicacao.id}`;
+      } catch (erro) {
+        mostrar(avisoReivindicacao, erro.message, true);
+        botao.disabled = false;
+        botao.textContent = 'Enviar reivindicação';
+      }
+    });
 
     async function prepararAdministracao() {
       document.getElementById('administracao').hidden = false;
@@ -196,7 +309,6 @@
       }
     });
 
-    // A reivindicação (RF04.1) entra nesta página quando for implementada.
     carregar();
   </script>
 </body>

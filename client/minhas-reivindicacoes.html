@@ -20,12 +20,55 @@
 
   <main>
     <h1>Minhas reivindicações</h1>
-    <div class="cartao">
-      <p class="suave">Página a construir (RF04.3 e RF04.7).</p>
-    </div>
+    <section class="cartao">
+      <ul class="lista-simples" id="lista"></ul>
+      <p class="suave" id="vazio" hidden>Você ainda não reivindicou nenhum item. Procure o seu em <a href="/itens.html">Itens encontrados</a>.</p>
+      <p id="aviso" role="status"></p>
+    </section>
   </main>
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script>
+    // RF04.7: estado de cada reivindicação (aberta, aprovada, rejeitada)
+    const ROTULOS = { ABERTA: 'Aberta', APROVADA: 'Aprovada', REJEITADA: 'Rejeitada' };
+
+    function dataHora(texto) {
+      return new Date(texto.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    }
+
+    api('/reivindicacoes/minhas')
+      .then((reivindicacoes) => {
+        document.getElementById('vazio').hidden = reivindicacoes.length > 0;
+        document.getElementById('lista').replaceChildren(...reivindicacoes.map((r) => {
+          const li = document.createElement('li');
+          const texto = document.createElement('div');
+          const link = document.createElement('a');
+          link.href = `/reivindicacao.html?id=${r.id}`;
+          link.textContent = r.itemTitulo;
+          const data = document.createElement('small');
+          data.className = 'suave';
+          data.textContent = ` · aberta em ${dataHora(r.dataAbertura)}`;
+          texto.append(link, data);
+          if (r.motivoRejeicao) {
+            const motivo = document.createElement('p');
+            motivo.className = 'suave';
+            motivo.style.margin = '4px 0 0';
+            motivo.textContent = `Motivo: ${r.motivoRejeicao}`;
+            texto.append(motivo);
+          }
+          const selo = document.createElement('span');
+          selo.className = `selo selo-${r.status.toLowerCase()}`;
+          selo.textContent = ROTULOS[r.status];
+          li.append(texto, selo);
+          return li;
+        }));
+      })
+      .catch((erro) => {
+        const aviso = document.getElementById('aviso');
+        aviso.textContent = erro.message;
+        aviso.className = 'erro';
+      });
+  </script>
 </body>
 </html>

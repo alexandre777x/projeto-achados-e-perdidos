@@ -92,7 +92,7 @@ As classes de `module/` carregam as regras de negócio (validações, ciclo de v
 | RF02 Registro de item ✅ | `ItemController` | `ItemService`, `ItemRepository`, `UploadMiddleware` | `Item`, `Foto`, `HistoricoStatus` | `novo-item.html`, `admin.html` |
 | RF02.3 Categorias e locais ✅ | `ReferenciaController` | `CategoriaRepository`, `LocalRepository` | `Categoria`, `Local` | `admin.html`, `novo-item.html`, `itens.html` |
 | RF03 Busca ✅ | `ItemController` | `ItemService`, `ItemRepository` | `Item` | `index.html`, `itens.html`, `item.html` |
-| RF04 Reivindicação | `ReivindicacaoController` | `ReivindicacaoRepository` | `Reivindicacao`, `ProvaPosse`, `Mensagem` | `item.html`, `minhas-reivindicacoes.html` |
+| RF04 Reivindicação ✅ | `ReivindicacaoController` | `ReivindicacaoService`, `ReivindicacaoRepository` | `Reivindicacao`, `ProvaPosse`, `Mensagem` | `item.html`, `reivindicacao.html`, `minhas-reivindicacoes.html`, `admin.html` |
 | RF05.1 a RF05.3 Devolução | `DevolucaoController` | `DevolucaoRepository` | `Devolucao` | `admin.html` |
 | RF05.4 e RF05.5 Relatório e CSV ✅ | `DevolucaoController` | `RelatorioService`, `DevolucaoRepository` | `RelatorioDevolucoes`, `PeriodoDeDatas` | `admin.html` |
 

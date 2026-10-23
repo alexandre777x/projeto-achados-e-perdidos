@@ -44,6 +44,7 @@ export class UploadMiddleware {
           cb(null, randomBytes(16).toString("hex") + UploadMiddleware.EXTENSOES[arquivo.mimetype]),
       }),
       limits: { fileSize: regras.tamanhoMaximo, files: regras.maximoDeArquivos },
+      defParamCharset: "utf8", // nomes de arquivo com acento chegam certos (o padrão é latin1)
       fileFilter: (req, arquivo, cb) => {
         if (!regras.tiposAceitos.includes(arquivo.mimetype)) {
           return cb(new ErroDeNegocio(`Tipo de arquivo não aceito: ${arquivo.originalname}.`));
