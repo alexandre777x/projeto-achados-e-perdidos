@@ -87,7 +87,7 @@ As classes de `module/` carregam as regras de negócio (validações, ciclo de v
 | Requisito | Controller | Service / Repository | Entidades | Páginas |
 | --- | --- | --- | --- | --- |
 | RF01.3 e RF01.4 Login e logout ✅ | `AutenticacaoController` | `AutenticacaoService`, `UsuarioRepository` | `Usuario` | `login.html` |
-| RF01.1, RF01.2, RF01.5 Cadastro | `AutenticacaoController` | `UsuarioRepository` | `Usuario` | `cadastro.html` |
+| RF01.1, RF01.2, RF01.5 Cadastro ✅ | `AutenticacaoController` | `AutenticacaoService`, `UsuarioRepository` | `Usuario` | `cadastro.html` |
 | RF01.6 Recuperar senha ✅ | `AutenticacaoController` | `RecuperacaoSenhaService`, `RecuperacaoSenhaRepository`, `EmailService` | `Usuario` | `esqueci-senha.html`, `redefinir-senha.html` |
 | RF02 Registro de item ✅ | `ItemController` | `ItemService`, `ItemRepository`, `UploadMiddleware` | `Item`, `Foto`, `HistoricoStatus` | `novo-item.html`, `admin.html` |
 | RF02.3 Categorias e locais ✅ | `ReferenciaController` | `CategoriaRepository`, `LocalRepository` | `Categoria`, `Local` | `admin.html`, `novo-item.html`, `itens.html` |

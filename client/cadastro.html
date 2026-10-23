@@ -19,13 +19,108 @@
   </header>
 
   <main>
-    <h1>Criar conta</h1>
-    <div class="cartao">
-      <p class="suave">Página a construir (RF01.1 e RF01.2).</p>
-    </div>
+    <form class="cartao cartao-estreito" id="formulario" novalidate>
+      <h1>Criar conta</h1>
+      <p class="suave" id="explicacao">Use o seu e-mail institucional.</p>
+
+      <label for="nome">Nome completo</label>
+      <input type="text" id="nome" name="nome" required minlength="3" maxlength="100" autocomplete="name" autofocus>
+
+      <label for="email">E-mail institucional</label>
+      <input type="email" id="email" name="email" required autocomplete="email">
+
+      <label for="perfil">Você é</label>
+      <select id="perfil" name="perfil" required>
+        <option value="ALUNO">Aluno</option>
+        <option value="PROFESSOR">Professor</option>
+      </select>
+
+      <label for="senha">Senha (mínimo 8 caracteres)</label>
+      <input type="password" id="senha" name="senha" required minlength="8" autocomplete="new-password">
+
+      <label for="confirmacao">Repita a senha</label>
+      <input type="password" id="confirmacao" name="confirmacao" required minlength="8" autocomplete="new-password">
+
+      <p id="aviso" role="alert"></p>
+      <button type="submit" class="botao-largo">Criar conta</button>
+
+      <p class="links-login" id="link-login">
+        <a href="/login.html">Já tenho conta</a>
+      </p>
+    </form>
   </main>
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script>
+    // RF01.1, RF01.2 e RF01.5: cadastro de usuário
+    const formulario = document.getElementById('formulario');
+    const aviso = document.getElementById('aviso');
+    let cadastradoPorAdmin = false;
+
+    function mostrar(texto, ehErro) {
+      aviso.textContent = texto;
+      aviso.className = ehErro ? 'erro' : '';
+    }
+
+    // RF01.5: só um administrador logado vê a opção de criar outro administrador.
+    // Quem já está logado com outro perfil não precisa de uma conta nova.
+    api('/auth/eu').then((usuario) => {
+      if (usuario.perfil === 'ADMINISTRADOR') {
+        cadastradoPorAdmin = true;
+        formulario.perfil.append(new Option('Administrador', 'ADMINISTRADOR'));
+        document.getElementById('explicacao').textContent =
+          'Você está criando a conta de outra pessoa. Sua sessão continua a mesma.';
+        document.getElementById('link-login').hidden = true;
+      } else {
+        formulario.replaceChildren();
+        const h1 = document.createElement('h1');
+        h1.textContent = 'Criar conta';
+        const p = document.createElement('p');
+        p.textContent = `Você já está logado como ${usuario.nome}.`;
+        formulario.append(h1, p);
+      }
+    }).catch(() => {
+      // não está logado: auto cadastro
+    });
+
+    formulario.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      mostrar('');
+
+      const dados = {
+        nome: formulario.nome.value.trim(),
+        email: formulario.email.value.trim(),
+        perfil: formulario.perfil.value,
+        senha: formulario.senha.value,
+      };
+      if (!dados.nome || !dados.email || !dados.senha) {
+        return mostrar('Preencha todos os campos.', true);
+      }
+      if (dados.senha.length < 8) {
+        return mostrar('A senha precisa ter pelo menos 8 caracteres.', true);
+      }
+      if (dados.senha !== formulario.confirmacao.value) {
+        return mostrar('As duas senhas não são iguais.', true);
+      }
+
+      const botao = formulario.querySelector('button');
+      botao.disabled = true;
+      botao.textContent = 'Criando...';
+      try {
+        const usuario = await api('/auth/cadastro', { method: 'POST', body: dados });
+        if (!cadastradoPorAdmin) {
+          location.href = '/';
+          return;
+        }
+        formulario.reset();
+        mostrar(`Conta de ${usuario.nome} criada.`, false);
+      } catch (erro) {
+        mostrar(erro.message, true);
+      }
+      botao.disabled = false;
+      botao.textContent = 'Criar conta';
+    });
+  </script>
 </body>
 </html>

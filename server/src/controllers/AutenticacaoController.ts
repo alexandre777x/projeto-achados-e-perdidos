@@ -1,6 +1,5 @@
 import { Request, Response } from "express";
 import { Configuracao } from "../config/Configuracao";
-import { ErroDeNegocio } from "../module/ErroDeNegocio";
 import { AutenticacaoService } from "../services/AutenticacaoService";
 import { RecuperacaoSenhaService } from "../services/RecuperacaoSenhaService";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
@@ -10,9 +9,19 @@ export class AutenticacaoController {
   private readonly servico = new AutenticacaoService();
   private readonly recuperacao = new RecuperacaoSenhaService();
 
-  /** RF01.1, RF01.2, RF01.5 */
-  public cadastrar(req: Request, res: Response): void {
-    throw ErroDeNegocio.naoImplementado("RF01.1, RF01.2, RF01.5");
+  /**
+   * RF01.1, RF01.2, RF01.5. Quem se cadastra sozinho já entra logado; quando um
+   * administrador cria a conta de outra pessoa, a sessão dele continua a mesma.
+   */
+  public async cadastrar(req: Request, res: Response): Promise<void> {
+    const { nome, email, senha, perfil } = req.body ?? {};
+    const quemCadastra = SessaoDaRequisicao.usuario(req);
+
+    const usuario = await this.servico.cadastrar({ nome, email, senha, perfil }, quemCadastra?.perfil ?? null);
+    if (!quemCadastra) {
+      await SessaoDaRequisicao.iniciar(req, usuario);
+    }
+    res.status(201).json(usuario);
   }
 
   /** RF01.3: confere e-mail e senha e inicia a sessão. */
