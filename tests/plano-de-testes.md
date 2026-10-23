@@ -27,6 +27,62 @@ Os 18 casos foram executados **pela API** (requisições HTTP direto ao servidor
 | CT17 | RF05.4 | Relatório com data inicial depois da final | Sistema recusa e explica | 400 "A data inicial não pode ser depois da data final." | Aprovado |
 | CT18 | RF05.5 | Exportar relatório com item cujo título começa com "=" | CSV abre no Excel sem executar fórmula | A célula sai como `'=HYPERLINK(...)`, com apóstrofo na frente | Aprovado no arquivo; conferir abrindo no Excel |
 
-## Caixa branca (a preencher na implementação)
+## Caixa branca
 
-Testes que olham o código: cobrir os desvios (if/else) das regras de negócio RN01 a RN05 e das funções dos models.
+Testes que olham o código: cobrem os desvios (if/else) das regras de negócio RN01 a RN05 e das funções dos models. São automáticos e ficam em `server/test/`.
+
+### Como rodar
+
+Na pasta `server/`:
+
+```bash
+npm test                # roda os 216 testes (cerca de 4 segundos)
+npm run test:cobertura  # roda e mostra a cobertura de linhas e de desvios por arquivo
+```
+
+Usam o executor de testes do próprio Node (`node:test`), sem dependência nova. Cada arquivo de teste roda com um **banco temporário próprio**, criado e apagado sozinho: os testes nunca tocam no `data/campuslost.db`.
+
+### O que cada arquivo cobre
+
+| Arquivo | Camada | O que testa |
+| --- | --- | --- |
+| `test/module/Item.test.ts` | Model | Validações do item (RF02.1, RF02.4), status inicial por perfil (RF02.5) e **as 16 combinações** de mudança de status do ciclo de vida: 4 permitidas e 12 proibidas |
+| `test/module/Reivindicacao.test.ts` | Model | Respostas obrigatórias, aprovar, rejeitar com motivo (CT09) e bloqueio de decidir duas vezes |
+| `test/module/outras-entidades.test.ts` | Model | Usuario (senha só como hash), Devolucao (só tipo do documento), Categoria, Local, Mensagem, Foto, ProvaPosse, HistoricoStatus |
+| `test/module/relatorio.test.ts` | Model | PeriodoDeDatas (CT17) e o CSV do relatório: BOM, `;`, aspas, vírgula decimal e proteção contra fórmula (CT18) |
+| `test/services/regras-de-negocio.test.ts` | Service + banco | **RN01 a RN05**, um bloco para cada regra (tabela abaixo) |
+| `test/services/ItemService.test.ts` | Service + banco | Registro, manutenção (RF02.6), busca com todos os filtros (RF03) e detalhe por perfil |
+| `test/services/ReivindicacaoService.test.ts` | Service + banco | Abrir, rejeitar com e sem outras abertas, quem pode decidir, mensagens e provas |
+| `test/services/autenticacao.test.ts` | Service + banco | Cadastro (RF01.1, RF01.2, RF01.5), login (CT02, CT03) e recuperação de senha (CT12 a CT14) |
+| `test/http.test.ts` | API inteira | Servidor de verdade: middlewares de login e perfil (CT11), upload (CT04, CT15, CT16), erros 400/404/500 e o fluxo completo até o CSV |
+
+### Regras de negócio
+
+| Regra | Desvios testados |
+| --- | --- |
+| RN01: devolução só com reivindicação aprovada | aberta, rejeitada, inexistente e documento inválido são recusados; aprovada registra e o item vira Devolvido; não registra duas vezes |
+| RN02: no máximo uma aprovada por item | aprovar rejeita as outras abertas do mesmo item (e só dele); depois de aprovada ninguém mais reivindica; o índice único do banco também barra |
+| RN03: devolvido some da busca, fica no histórico | some da busca e do detalhe público, a administração ainda vê; continua no histórico; a busca só lista Disponível |
+| RN04: anúncio não mostra os detalhes da validação | detalhe público e busca não trazem as respostas; só o reivindicante e a administração as veem, os outros recebem 404 |
+| RN05: toda mudança de status registra quem e quando | o ciclo completo gera 6 registros, cada um com o usuário certo; aprovar e uma segunda reivindicação não mudam o status e não geram registro; transição recusada não grava nada |
+
+### Resultado de 23/10/2026
+
+**216 testes, 216 aprovados**, repetidos três vezes sem falha.
+
+| Cobertura (`npm run test:cobertura`) | Linhas | Desvios (branches) | Funções |
+| --- | --- | --- | --- |
+| Total | 96,8% | 93,0% | 90,0% |
+
+Os services (onde ficam as regras) e os models principais têm de 96% a 99% das linhas cobertas. Na leitura do relatório:
+
+- **Linhas que são só `}` e os arquivos de enum** (`StatusItem`, `PerfilUsuario` etc.) aparecem como "não cobertas" por limitação da ferramenta com TypeScript, não por falta de teste.
+- **Desvios reais sem teste, de propósito:**
+  - envio de e-mail por SMTP de verdade (`EmailService`): exige um servidor de e-mail; o caminho sem SMTP (link no terminal) é testado;
+  - falha interna do `express-session` ao criar ou destruir a sessão (`SessaoDaRequisicao`);
+  - devolução de reivindicação aprovada cujo item sumiu (`DevolucaoService`): o banco não deixa isso acontecer (chave estrangeira), é só uma proteção extra;
+  - `App.iniciar`, que só sobe o servidor numa porta fixa (os testes sobem numa porta livre).
+
+### Observação encontrada pelos testes
+
+No CSV, um **número negativo** também ganha o apóstrofo da proteção contra fórmula, por começar com `-` (fica `'-1`). Não afeta o relatório hoje, porque os dias até a devolução nunca são negativos, mas fica registrado.

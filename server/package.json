@@ -9,7 +9,9 @@
     "dev": "tsx watch src/server.ts",
     "build": "tsc",
     "start": "node dist/server.js",
-    "criar-admin": "tsx src/scripts/criarAdmin.ts"
+    "criar-admin": "tsx src/scripts/criarAdmin.ts",
+    "test": "tsx --test \"test/**/*.test.ts\"",
+    "test:cobertura": "tsx --test --experimental-test-coverage --test-coverage-exclude=\"test/**\" \"test/**/*.test.ts\""
   },
   "engines": {
     "node": ">=20"

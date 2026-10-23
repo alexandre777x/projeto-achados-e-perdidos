@@ -46,6 +46,8 @@ Abra http://localhost:3000. A página inicial mostra "Servidor ok" quando o serv
 | `npm run build` | Confere os tipos e gera o JavaScript em `server/dist/` |
 | `npm start` | Roda a versão gerada pelo build |
 | `npm run criar-admin` | Cria uma conta de administrador |
+| `npm test` | Roda os testes automáticos (usam um banco temporário, nunca o seu) |
+| `npm run test:cobertura` | Roda os testes e mostra quanto do código eles cobrem |
 
 ## Estrutura de pastas
 
@@ -70,11 +72,12 @@ projeto-achados-e-perdidos/
 │   │   ├── middlewares/         login, perfil de administrador, erros
 │   │   ├── scripts/             criarAdmin
 │   │   └── types/               tipos extras (dados da sessão)
+│   ├── test/                    testes automáticos de caixa branca (npm test)
 │   ├── data/                    arquivo do banco (não vai para o Git)
 │   ├── uploads/                 fotos dos itens, públicas (não vai para o Git)
 │   └── provas/                  provas de posse, privadas (não vai para o Git)
 ├── docs/                        documentação (SRS, diagramas)
-└── tests/                       plano de testes
+└── tests/                       plano de testes (caixa preta e caixa branca)
 ```
 
 O caminho de uma requisição é: `App.ts` (rota) → `controllers` → `services` → `repositories` → banco.
@@ -109,5 +112,5 @@ git commit -m "RF01: cadastro de usuário"
 git push -u origin feature/rf01-cadastro
 ```
 
-Antes de abrir o Pull Request, rode `npm run build` em `server/` para conferir se não há erro de tipo.
+Antes de abrir o Pull Request, rode `npm run build` e `npm test` em `server/` para conferir se não há erro de tipo nem teste quebrado.
 Nunca envie o arquivo `.env` nem o banco (`server/data/`): o `.gitignore` já bloqueia os dois.
