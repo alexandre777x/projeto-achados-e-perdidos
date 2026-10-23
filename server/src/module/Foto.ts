@@ -1,3 +1,6 @@
+import path from "path";
+import { Configuracao } from "../config/Configuracao";
+
 /** Foto de um item (RF02.2): de 1 a 3 por item, JPG ou PNG, até 5 MB cada. Pública. */
 export class Foto {
   public static readonly TIPOS_ACEITOS = ["image/jpeg", "image/png"];
@@ -19,6 +22,11 @@ export class Foto {
 
   public getCaminho(): string {
     return this.caminho;
+  }
+
+  /** Caminho completo do arquivo, dentro da pasta de uploads. */
+  public getCaminhoNoDisco(): string {
+    return path.join(Configuracao.pastaUploads, this.caminho);
   }
 
   public getItemId(): number {

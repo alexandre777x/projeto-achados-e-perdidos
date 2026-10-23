@@ -89,7 +89,7 @@ As classes de `module/` carregam as regras de negócio (validações, ciclo de v
 | RF01.3 e RF01.4 Login e logout ✅ | `AutenticacaoController` | `AutenticacaoService`, `UsuarioRepository` | `Usuario` | `login.html` |
 | RF01.1, RF01.2, RF01.5 Cadastro | `AutenticacaoController` | `UsuarioRepository` | `Usuario` | `cadastro.html` |
 | RF01.6 Recuperar senha ✅ | `AutenticacaoController` | `RecuperacaoSenhaService`, `RecuperacaoSenhaRepository`, `EmailService` | `Usuario` | `esqueci-senha.html`, `redefinir-senha.html` |
-| RF02 Registro de item | `ItemController` | `ItemRepository` | `Item`, `Foto`, `HistoricoStatus` | `novo-item.html` |
+| RF02 Registro de item ✅ (falta a tela de edição do RF02.6) | `ItemController` | `ItemService`, `ItemRepository`, `UploadMiddleware` | `Item`, `Foto`, `HistoricoStatus` | `novo-item.html`, `admin.html` |
 | RF02.3 Categorias e locais ✅ | `ReferenciaController` | `CategoriaRepository`, `LocalRepository` | `Categoria`, `Local` | `admin.html`, `novo-item.html`, `itens.html` |
 | RF03 Busca | `ItemController` | `ItemRepository` | `Item` | `itens.html`, `item.html` |
 | RF04 Reivindicação | `ReivindicacaoController` | `ReivindicacaoRepository` | `Reivindicacao`, `ProvaPosse`, `Mensagem` | `item.html`, `minhas-reivindicacoes.html` |

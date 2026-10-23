@@ -260,6 +260,15 @@ button:hover,
   color: var(--texto-suave);
 }
 
+.item-foto {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  object-fit: cover;
+  border-radius: 8px;
+  background: var(--cinza-claro);
+}
+
 /* Selos de status do item (valores da coluna item.status) */
 .selo {
   display: inline-block;

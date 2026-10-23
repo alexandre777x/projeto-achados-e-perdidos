@@ -9,6 +9,9 @@ import { ReivindicacaoController } from "./controllers/ReivindicacaoController";
 import { DevolucaoController } from "./controllers/DevolucaoController";
 import { AutenticacaoMiddleware } from "./middlewares/AutenticacaoMiddleware";
 import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
+import { UploadMiddleware } from "./middlewares/UploadMiddleware";
+import { Foto } from "./module/Foto";
+import { Item } from "./module/Item";
 
 /**
  * Monta a aplicação Express: sessão, arquivos do front-end (pasta client/),
@@ -34,6 +37,18 @@ export class App {
   /** Só administrador (RNF01.1). */
   private readonly exigirAdmin: express.RequestHandler = (req, res, next) =>
     this.autenticacaoMiddleware.exigirAdmin(req, res, next);
+
+  /** Fotos dos itens (RF02.2): de 1 a 3, JPG ou PNG, até 5 MB cada. */
+  private readonly uploadDeFotos = new UploadMiddleware({
+    pasta: Configuracao.pastaUploads,
+    campo: "fotos",
+    tiposAceitos: Foto.TIPOS_ACEITOS,
+    tamanhoMaximo: Foto.TAMANHO_MAXIMO,
+    maximoDeArquivos: Item.MAX_FOTOS,
+  });
+
+  private readonly receberFotos: express.RequestHandler = (req, res, next) =>
+    this.uploadDeFotos.tratar(req, res, next);
 
   constructor() {
     this.app = express();
@@ -93,8 +108,11 @@ export class App {
   private configurarRotasDeItens(): void {
     const c = this.itemController;
     this.api.get("/itens", (req, res) => c.buscar(req, res));
+    // Antes de /itens/:id, senão "aguardando-recebimento" seria lido como um id.
+    this.api.get("/itens/aguardando-recebimento", this.exigirAdmin, (req, res) => c.listarAguardandoRecebimento(req, res));
     this.api.get("/itens/:id", (req, res) => c.detalhar(req, res));
-    this.api.post("/itens", this.exigirLogin, (req, res) => c.registrar(req, res));
+    // O login vem antes do upload: quem não entrou não chega a gravar arquivos.
+    this.api.post("/itens", this.exigirLogin, this.receberFotos, (req, res) => c.registrar(req, res));
     this.api.patch("/itens/:id/recebimento", this.exigirAdmin, (req, res) => c.confirmarRecebimento(req, res));
     this.api.put("/itens/:id", this.exigirAdmin, (req, res) => c.editar(req, res));
     this.api.delete("/itens/:id", this.exigirAdmin, (req, res) => c.excluir(req, res));

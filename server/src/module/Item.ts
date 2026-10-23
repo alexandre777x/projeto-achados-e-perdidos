@@ -125,6 +125,10 @@ export class Item {
     return this.registradoPor;
   }
 
+  public getDataRegistro(): string | undefined {
+    return this.dataRegistro;
+  }
+
   public estaDisponivel(): boolean {
     return this.status === StatusItem.DISPONIVEL;
   }

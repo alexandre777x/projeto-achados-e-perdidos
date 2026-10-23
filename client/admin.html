@@ -21,8 +21,16 @@
   <main>
     <h1>Administração</h1>
     <div class="cartao">
-      <p class="suave">Página a construir (RF02.6, RF04.4 e RF05.1).</p>
+      <p class="suave">Página a construir (edição de itens do RF02.6, RF04.4 e RF05.1).</p>
     </div>
+
+    <section class="cartao">
+      <h2>Itens aguardando recebimento</h2>
+      <p class="suave">Registrados por alunos e professores. Confirme quando o objeto chegar à segurança: só então ele aparece na busca.</p>
+      <div class="grade-itens" id="aguardando"></div>
+      <p class="suave" id="aguardando-vazio" hidden>Nenhum item aguardando recebimento.</p>
+      <p id="aviso-aguardando" role="status"></p>
+    </section>
 
     <section class="cartao">
       <h2>Categorias e locais</h2>
@@ -83,6 +91,70 @@
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
   <script>
+    // RF02.6: confirmar o recebimento físico ou excluir itens registrados por outros perfis
+    const avisoAguardando = document.getElementById('aviso-aguardando');
+
+    function avisarAguardando(texto, ehErro) {
+      avisoAguardando.textContent = texto;
+      avisoAguardando.className = ehErro ? 'erro' : '';
+    }
+
+    async function carregarAguardando() {
+      const [itens, categorias, locais] = await Promise.all([
+        api('/itens/aguardando-recebimento'),
+        api('/referencias/categorias'),
+        api('/referencias/locais'),
+      ]);
+      const nomeCategoria = Object.fromEntries(categorias.map((c) => [c.id, c.nome]));
+      const nomeLocal = Object.fromEntries(locais.map((l) => [l.id, l.nome]));
+
+      const grade = document.getElementById('aguardando');
+      document.getElementById('aguardando-vazio').hidden = itens.length > 0;
+      grade.replaceChildren(...itens.map((item) => {
+        const cartao = document.createElement('div');
+        cartao.className = 'item';
+
+        const foto = document.createElement('img');
+        foto.className = 'item-foto';
+        foto.src = item.fotos[0]?.url ?? '';
+        foto.alt = `Foto de ${item.titulo}`;
+        const titulo = document.createElement('h3');
+        titulo.textContent = `${item.titulo} (nº ${item.id})`;
+        const detalhes = document.createElement('p');
+        detalhes.textContent = `${nomeCategoria[item.categoriaId]} · ${nomeLocal[item.localId]} · achado em ${item.dataAchado.split('-').reverse().join('/')}`;
+
+        const confirmar = document.createElement('button');
+        confirmar.textContent = 'Confirmar recebimento';
+        confirmar.addEventListener('click', () => agirSobreItem(
+          () => api(`/itens/${item.id}/recebimento`, { method: 'PATCH' }),
+          `"${item.titulo}" agora está disponível na busca.`));
+
+        const excluir = document.createElement('button');
+        excluir.className = 'botao-claro';
+        excluir.textContent = 'Excluir';
+        excluir.addEventListener('click', () => {
+          if (!confirm(`Excluir "${item.titulo}"? As fotos também serão apagadas.`)) return;
+          agirSobreItem(() => api(`/itens/${item.id}`, { method: 'DELETE' }), `"${item.titulo}" foi excluído.`);
+        });
+
+        cartao.append(foto, titulo, detalhes, confirmar, ' ', excluir);
+        return cartao;
+      }));
+    }
+
+    async function agirSobreItem(acao, mensagem) {
+      avisarAguardando('');
+      try {
+        await acao();
+        avisarAguardando(mensagem, false);
+        await carregarAguardando();
+      } catch (erro) {
+        avisarAguardando(erro.message, true);
+      }
+    }
+
+    carregarAguardando().catch((erro) => avisarAguardando(erro.message, true));
+
     // RF02.3: listas de categorias e locais mantidas pelo administrador
     function configurarLista(rota, idLista, idForm, idAviso, mensagemCriado) {
       const lista = document.getElementById(idLista);

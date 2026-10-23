@@ -20,12 +20,112 @@
 
   <main>
     <h1>Registrar item encontrado</h1>
-    <div class="cartao">
-      <p class="suave">Página a construir (RF02).</p>
-    </div>
+    <form class="cartao" id="formulario" novalidate>
+      <label for="titulo">Título</label>
+      <input type="text" id="titulo" name="titulo" required minlength="3" maxlength="80"
+             placeholder="Ex.: Garrafa térmica azul">
+
+      <label for="descricao">Descrição</label>
+      <textarea id="descricao" name="descricao" rows="4" required maxlength="1000"
+                placeholder="Cor, marca, estado. Não conte detalhes que só o dono saberia: eles servem para conferir quem reivindica."></textarea>
+
+      <div class="acoes">
+        <div>
+          <label for="categoriaId">Categoria</label>
+          <select id="categoriaId" name="categoriaId" required>
+            <option value="">Escolha...</option>
+          </select>
+        </div>
+        <div>
+          <label for="localId">Onde foi encontrado</label>
+          <select id="localId" name="localId" required>
+            <option value="">Escolha...</option>
+          </select>
+        </div>
+      </div>
+
+      <label for="dataAchado">Data em que foi encontrado</label>
+      <input type="date" id="dataAchado" name="dataAchado" required>
+
+      <label for="fotos">Fotos (de 1 a 3, JPG ou PNG, até 5 MB cada)</label>
+      <input type="file" id="fotos" name="fotos" accept="image/jpeg,image/png" multiple required>
+
+      <p id="aviso" role="alert"></p>
+      <button type="submit">Registrar item</button>
+    </form>
   </main>
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script>
+    // RF02.1 a RF02.5: registro de item encontrado
+    const MAX_FOTOS = 3;
+    const TAMANHO_MAXIMO = 5 * 1024 * 1024;
+    const formulario = document.getElementById('formulario');
+    const aviso = document.getElementById('aviso');
+
+    function mostrar(texto, ehErro) {
+      aviso.textContent = texto;
+      aviso.className = ehErro ? 'erro' : '';
+    }
+
+    // RF02.4: o calendário não deixa escolher data futura
+    function hoje() {
+      const agora = new Date();
+      return new Date(agora.getTime() - agora.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    }
+    formulario.dataAchado.max = hoje();
+    formulario.dataAchado.value = hoje();
+
+    // RF02.3: categorias e locais vêm das listas da administração
+    async function preencherLista(select, rota) {
+      for (const opcao of await api(rota)) select.append(new Option(opcao.nome, opcao.id));
+    }
+    Promise.all([
+      preencherLista(formulario.categoriaId, '/referencias/categorias'),
+      preencherLista(formulario.localId, '/referencias/locais'),
+    ]).catch((erro) => mostrar(erro.message, true));
+
+    function conferirFotos(fotos) {
+      if (fotos.length === 0) return 'Anexe pelo menos uma foto do item.';
+      if (fotos.length > MAX_FOTOS) return `Anexe no máximo ${MAX_FOTOS} fotos.`;
+      for (const foto of fotos) {
+        if (!['image/jpeg', 'image/png'].includes(foto.type)) return `${foto.name} não é JPG nem PNG.`;
+        if (foto.size > TAMANHO_MAXIMO) return `${foto.name} passa de 5 MB.`;
+      }
+      return null;
+    }
+
+    formulario.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      mostrar('');
+
+      if (formulario.titulo.value.trim().length < 3) return mostrar('O título precisa ter pelo menos 3 caracteres.', true);
+      if (!formulario.descricao.value.trim()) return mostrar('Descreva o item.', true);
+      if (!formulario.categoriaId.value) return mostrar('Escolha uma categoria.', true);
+      if (!formulario.localId.value) return mostrar('Escolha o local onde o item foi encontrado.', true);
+      if (!formulario.dataAchado.value) return mostrar('Informe a data em que o item foi encontrado.', true);
+      if (formulario.dataAchado.value > hoje()) return mostrar('A data do achado não pode ser futura.', true);
+      const problemaNasFotos = conferirFotos([...formulario.fotos.files]);
+      if (problemaNasFotos) return mostrar(problemaNasFotos, true);
+
+      const botao = formulario.querySelector('button');
+      botao.disabled = true;
+      botao.textContent = 'Enviando...';
+      try {
+        const item = await api('/itens', { method: 'POST', body: new FormData(formulario) });
+        formulario.reset();
+        formulario.dataAchado.value = hoje();
+        mostrar(item.status === 'DISPONIVEL'
+          ? `Item nº ${item.id} registrado e já disponível na busca.`
+          : `Item nº ${item.id} registrado. Leve o objeto à segurança do campus: ele aparece na busca depois que a administração confirmar o recebimento.`,
+          false);
+      } catch (erro) {
+        mostrar(erro.message, true);
+      }
+      botao.disabled = false;
+      botao.textContent = 'Registrar item';
+    });
+  </script>
 </body>
 </html>
