@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>CampusLost – Achados e Perdidos</title>
   <link rel="icon" href="/img/undb.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -21,7 +24,12 @@
 
   <main>
     <section class="hero">
-      <h1>Perdeu algo no campus?</h1>
+      <div class="fundo-acesso" aria-hidden="true">
+        <div class="mancha mancha-1"></div>
+        <div class="mancha mancha-2"></div>
+        <svg class="setas setas-1" viewBox="0 0 220 120"><polyline points="4,6 64,60 4,114"/><polyline points="74,6 134,60 74,114"/><polyline points="144,6 204,60 144,114"/></svg>
+      </div>
+      <h1>Perdeu algo no <span>campus</span>?</h1>
       <p>Encontre objetos perdidos ou ajude alguém a recuperar o que perdeu.</p>
 
       <form class="busca" action="/itens.html" role="search">
@@ -33,7 +41,7 @@
 
       <div class="acoes">
         <a class="botao botao-claro" href="/itens.html">Ver itens encontrados</a>
-        <a class="botao" href="/novo-item.html">Registrar item</a>
+        <a class="botao botao-destaque" href="/novo-item.html">Registrar item</a>
       </div>
     </section>
 
@@ -42,24 +50,11 @@
       <div class="grade-itens" id="ultimos"></div>
       <p class="suave" id="ultimos-vazio" hidden>Nenhum item cadastrado ainda.</p>
     </section>
-
-    <p class="suave" id="status">Verificando o servidor...</p>
   </main>
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
   <script>
-    // Teste de ligação entre front-end, back-end e banco. Pode ser removido depois.
-    api('/saude')
-      .then((d) => {
-        document.getElementById('status').textContent = `Servidor ok. Tabelas no banco: ${d.tabelas}.`;
-      })
-      .catch(() => {
-        const el = document.getElementById('status');
-        el.textContent = 'Não foi possível falar com o servidor.';
-        el.classList.add('erro');
-      });
-
     // Últimos itens disponíveis (RF03.1)
     const rotulos = {
       AGUARDANDO_RECEBIMENTO: 'Aguardando recebimento',

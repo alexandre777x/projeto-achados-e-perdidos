@@ -1,19 +1,20 @@
 /* Estilo base do CampusLost. Mobile primeiro (RNF02): funciona de 360 px até telas grandes. */
 :root {
-  /* Paleta UNDB */
-  --bordo: #8e1748; /* cor principal: identidade e navegação */
-  --magenta: #c21870; /* destaques, botões e elementos interativos */
-  --rosa: #e83e72; /* ícones, etiquetas e detalhes visuais */
-  --branco-rosado: #f8f5f7; /* fundo da aplicação */
-  --grafite: #29232a; /* textos, títulos e contraste */
-  --cinza-claro: #e7e1e6; /* bordas, divisórias e campos */
+  /* Paleta do UNDB Classroom */
+  --roxo: #5800b4; /* cor principal: cabeçalho, botões e links */
+  --verde-agua: #22cfc0; /* destaque: nome CampusLost e botão de chamada */
+  --magenta: #e3258f; /* destaque: foco do teclado e detalhes */
+  --fundo: #f5f3fa; /* fundo da aplicação */
+  --grafite: #26212d; /* textos, títulos e contraste */
+  --cinza-claro: #e4e0ec; /* bordas, divisórias e campos */
 
   /* Derivadas */
-  --bordo-escuro: #6f1038;
-  --magenta-escuro: #a3125d;
+  --roxo-escuro: #43008a;
+  --roxo-fundo: #efe6fb; /* fundo claro de selos, mensagens e anel de foco */
+  --texto-no-verde: #1d0a3a; /* texto sobre o verde-água (o branco fica com pouco contraste) */
   --cartao: #ffffff;
-  --superficie: #f2ecf0; /* fundo dos cartões de item */
-  --texto-suave: #6b6169;
+  --superficie: #f1edf8; /* fundo dos cartões de item */
+  --texto-suave: #655f6e;
 
   /* Cores de status */
   --sucesso: #1e7b4f;
@@ -21,7 +22,6 @@
   --alerta: #8a5a00;
   --alerta-fundo: #fff1d6;
   --perigo: #b3261e;
-  --rosa-fundo: #fde4ec;
 
   --raio: 12px;
 }
@@ -32,8 +32,8 @@
 
 body {
   margin: 0;
-  font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
-  background: var(--branco-rosado);
+  font-family: "Poppins", "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+  background: var(--fundo);
   color: var(--grafite);
   line-height: 1.5;
 }
@@ -46,17 +46,17 @@ h3 {
 }
 
 a {
-  color: var(--magenta);
+  color: var(--roxo);
 }
 
 :focus-visible {
-  outline: 3px solid var(--rosa);
+  outline: 3px solid var(--magenta);
   outline-offset: 2px;
 }
 
 /* Cabeçalho e navegação */
 header {
-  background: var(--bordo);
+  background: linear-gradient(90deg, var(--roxo) 0%, #7417d0 100%);
   color: #fff;
   padding: 12px 16px;
   display: flex;
@@ -141,11 +141,11 @@ input:focus,
 select:focus,
 textarea:focus {
   outline: none;
-  border-color: var(--magenta);
-  box-shadow: 0 0 0 3px var(--rosa-fundo);
+  border-color: var(--roxo);
+  box-shadow: 0 0 0 3px var(--roxo-fundo);
 }
 
-/* Botões: .botao (magenta) e .botao-claro (branco com texto bordô) */
+/* Botões: .botao (roxo), .botao-claro (branco com texto roxo) e .botao-destaque (verde-água) */
 button,
 .botao {
   display: inline-block;
@@ -154,45 +154,116 @@ button,
   font: inherit;
   font-weight: 600;
   text-align: center;
-  background: var(--magenta);
+  background: var(--roxo);
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   cursor: pointer;
   text-decoration: none;
 }
 
 button:hover,
 .botao:hover {
-  background: var(--magenta-escuro);
+  background: var(--roxo-escuro);
 }
 
 .botao-claro {
   background: #fff;
-  color: var(--bordo);
+  color: var(--roxo);
 }
 
 .botao-claro:hover {
   background: var(--cinza-claro);
 }
 
-/* Destaque da página inicial */
+.botao-destaque {
+  background: var(--verde-agua);
+  color: var(--texto-no-verde);
+}
+
+.botao-destaque:hover {
+  background: #1bb5a8;
+}
+
+/* Destaque da página inicial: mesmo fundo do login (roxo, manchas e setas) */
 .hero {
-  background: var(--bordo);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  background: var(--roxo);
   color: #fff;
-  border-radius: var(--raio);
-  padding: 24px 16px;
+  border-radius: 28px;
+  padding: 40px 24px;
   margin-bottom: 24px;
+}
+
+.hero > * {
+  position: relative;
+  max-width: 620px;
+}
+
+.hero .fundo-acesso {
+  position: absolute;
+  z-index: -1;
+  max-width: none;
+}
+
+.hero .mancha-1 {
+  width: 360px;
+  height: 320px;
+  left: auto;
+  right: -120px;
+  top: -140px;
+}
+
+.hero .mancha-2 {
+  width: 300px;
+  height: 280px;
+  left: auto;
+  right: 120px;
+  bottom: -220px;
+}
+
+.hero .setas {
+  width: 150px;
+  height: 82px;
+}
+
+.hero .setas-1 {
+  left: auto;
+  right: 40px;
+  top: auto;
+  bottom: 24px;
 }
 
 .hero h1 {
   color: #fff;
   margin: 0 0 8px;
-  font-size: 1.75rem;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.hero h1 span {
+  color: var(--verde-agua);
 }
 
 .hero p {
-  margin: 0 0 16px;
+  margin: 0 0 20px;
+  font-size: 1.05rem;
+}
+
+@media (max-width: 600px) {
+  .hero {
+    padding: 28px 18px;
+  }
+
+  .hero h1 {
+    font-size: 1.6rem;
+  }
+
+  .hero .setas {
+    display: none;
+  }
 }
 
 .busca {
@@ -206,7 +277,7 @@ button:hover,
 
 .busca svg {
   flex: none;
-  color: var(--bordo);
+  color: var(--roxo);
 }
 
 .busca input {
@@ -246,7 +317,7 @@ button:hover,
 }
 
 .item:hover {
-  outline: 2px solid var(--rosa);
+  outline: 2px solid var(--magenta);
 }
 
 .item h3 {
@@ -314,8 +385,8 @@ div.item-foto::after {
   border-radius: 999px;
   font-size: 0.8rem;
   font-weight: 600;
-  background: var(--rosa-fundo);
-  color: var(--bordo);
+  background: var(--roxo-fundo);
+  color: var(--roxo);
 }
 
 .selo-disponivel {
@@ -390,7 +461,7 @@ div.item-foto::after {
 
 .mensagem-minha {
   align-self: flex-end;
-  background: var(--rosa-fundo);
+  background: var(--roxo-fundo);
 }
 
 .mensagem small {
@@ -430,7 +501,7 @@ td {
 }
 
 th {
-  color: var(--bordo);
+  color: var(--roxo);
 }
 
 /* Login e formulários curtos */
@@ -480,10 +551,6 @@ th {
    degradê e setas, e um cartão claro dividido em duas colunas.
    ========================================================================== */
 .pagina-acesso {
-  --roxo: #5800b4;
-  --roxo-escuro: #43008a;
-  --verde-agua: #22cfc0;
-  --magenta-vivo: #e3258f;
   --fundo-cartao: #f4fbfb;
 
   min-height: 100vh;
@@ -492,7 +559,6 @@ th {
   place-items: center;
   padding: 32px 16px;
   background: var(--roxo);
-  font-family: "Poppins", "Segoe UI", system-ui, sans-serif;
   overflow-x: hidden;
 }
 
@@ -666,14 +732,14 @@ th {
   align-items: center;
   gap: 8px;
   font-size: 1.15rem;
-  color: var(--magenta-vivo);
+  color: var(--magenta);
 }
 
 .logo-sub::before {
   content: "";
   width: 40px;
   height: 2px;
-  background: var(--magenta-vivo);
+  background: var(--magenta);
 }
 
 .acesso h1 {
