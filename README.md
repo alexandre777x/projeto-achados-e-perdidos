@@ -82,7 +82,8 @@ As classes de `module/` carregam as regras de negócio (validações, ciclo de v
 
 ## Onde fica cada requisito
 
-✅ = pronto. Os outros respondem "Ainda não implementado (RFxx)" até alguém programar o método no controller.
+Todos os requisitos funcionais do SRS estão implementados (✅). Os resultados dos testes estão em `tests/plano-de-testes.md`.
+Se uma rota nova for criada antes de ser programada, ela pode lançar `ErroDeNegocio.naoImplementado("RFxx")`, que responde 501.
 
 | Requisito | Controller | Service / Repository | Entidades | Páginas |
 | --- | --- | --- | --- | --- |
@@ -95,8 +96,6 @@ As classes de `module/` carregam as regras de negócio (validações, ciclo de v
 | RF04 Reivindicação ✅ | `ReivindicacaoController` | `ReivindicacaoService`, `ReivindicacaoRepository` | `Reivindicacao`, `ProvaPosse`, `Mensagem` | `item.html`, `reivindicacao.html`, `minhas-reivindicacoes.html`, `admin.html` |
 | RF05.1 a RF05.3 Devolução ✅ | `DevolucaoController` | `DevolucaoService`, `DevolucaoRepository` | `Devolucao` | `admin.html`, `reivindicacao.html` |
 | RF05.4 e RF05.5 Relatório e CSV ✅ | `DevolucaoController` | `RelatorioService`, `DevolucaoRepository` | `RelatorioDevolucoes`, `PeriodoDeDatas` | `admin.html` |
-
-Os repositórios que ainda estão vazios trazem, no comentário do topo, a lista de métodos a implementar.
 
 ## Trabalhando em equipe com Git
 
