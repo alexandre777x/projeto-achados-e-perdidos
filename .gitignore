@@ -11,16 +11,16 @@ logs/
 !.env.example
 
 # Banco de dados local (o schema.sql recria as tabelas)
-data/*
-!data/.gitkeep
+server/data/*
+!server/data/.gitkeep
 *.db
 *.sqlite
 
 # Fotos enviadas pelos usuários e provas de posse
-uploads/*
-!uploads/.gitkeep
-provas/*
-!provas/.gitkeep
+server/uploads/*
+!server/uploads/.gitkeep
+server/provas/*
+!server/provas/.gitkeep
 
 # Testes e build
 coverage/

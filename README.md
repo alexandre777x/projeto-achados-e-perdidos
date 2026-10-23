@@ -6,15 +6,19 @@ Equipe: Antonio Alexandre, Mateus Augusto e João Victor.
 
 ## Tecnologias
 
-- Front-end: HTML, CSS e JavaScript puro (pasta `public/`)
-- Back-end: Node.js com Express
-- Banco de dados: SQLite (arquivo local, sem instalação)
+| Parte do sistema | Tecnologia | Pasta |
+| --- | --- | --- |
+| Front-end | HTML, CSS e JavaScript | `client/` |
+| Back-end | Node.js com Express e TypeScript | `server/` |
+| Banco de dados | SQLite (arquivo local, sem instalação) | `server/data/` |
 
 ## Como rodar
 
-Precisa do Node.js 18 ou mais novo.
+Precisa do Node.js 20 ou mais novo. Todos os comandos rodam dentro da pasta `server/`.
 
 ```bash
+cd server
+
 # 1. Instalar as dependências (só na primeira vez)
 npm install
 
@@ -22,56 +26,77 @@ npm install
 copy .env.example .env        # no Windows
 # cp .env.example .env        # no Linux ou Mac
 
-# 3. Subir o servidor
+# 3. Criar o primeiro administrador (só na primeira vez)
+npm run criar-admin
+
+# 4. Subir o servidor
 npm run dev
 ```
 
 Abra http://localhost:3000. A página inicial mostra "Servidor ok" quando o servidor e o banco estão funcionando.
-O banco é criado sozinho na primeira execução, a partir de `src/database/schema.sql`.
-Se o `schema.sql` mudar, apague `data/campuslost.db` para o banco ser recriado (os dados de teste se perdem).
 
-Sem e-mail configurado no `.env`, o link de recuperação de senha aparece no terminal do servidor.
+- O banco é criado sozinho na primeira execução, a partir de `server/database/schema.sql` e `seed.sql`.
+  Se o `schema.sql` mudar, apague `server/data/campuslost.db` para o banco ser recriado (os dados de teste se perdem).
+- O primeiro administrador precisa ser criado pelo `npm run criar-admin`, porque o RF01.5 proíbe virar administrador pelo cadastro.
+- Sem e-mail configurado no `.env`, o link de recuperação de senha aparece no terminal do servidor.
+
+| Comando (em `server/`) | O que faz |
+| --- | --- |
+| `npm run dev` | Sobe o servidor e reinicia sozinho a cada alteração |
+| `npm run build` | Confere os tipos e gera o JavaScript em `server/dist/` |
+| `npm start` | Roda a versão gerada pelo build |
+| `npm run criar-admin` | Cria uma conta de administrador |
 
 ## Estrutura de pastas
 
 ```
-campuslost/
-├── docs/                    documentação (SRS, diagramas)
-├── public/                  front-end
-│   ├── css/style.css
-│   ├── js/api.js            função para chamar a API
-│   └── *.html               páginas
-├── src/                     back-end
-│   ├── server.js            ponto de entrada
-│   ├── app.js               configura o Express
-│   ├── config/env.js        lê o .env
-│   ├── database/            conexão, schema.sql, seed.sql, init.js
-│   ├── middlewares/         login, perfil de administrador, erros
-│   ├── routes/              quais endereços existem (um arquivo por assunto)
-│   ├── controllers/         o que cada endereço faz
-│   ├── models/              consultas SQL de cada tabela
-│   └── services/email.js    envio de e-mail (recuperação de senha)
-├── tests/                   plano de testes
-├── uploads/                 fotos dos itens, públicas (não vai para o Git)
-├── provas/                  provas de posse, privadas (não vai para o Git)
-└── data/                    arquivo do banco (não vai para o Git)
+projeto-achados-e-perdidos/
+├── client/                      front-end (servido pelo próprio servidor)
+│   ├── css/style.css            cores da UNDB e componentes
+│   ├── js/api.js                função para chamar a API
+│   ├── js/menu.js               menu conforme quem está logado
+│   └── *.html                   páginas
+├── server/                      back-end em TypeScript
+│   ├── database/                schema.sql e seed.sql
+│   ├── src/
+│   │   ├── server.ts            ponto de entrada
+│   │   ├── App.ts               monta o Express e registra todas as rotas
+│   │   ├── config/              Configuracao: lê o .env
+│   │   ├── database/            Database: conexão com o SQLite
+│   │   ├── module/              entidades e regras (Usuario, Item, Reivindicacao...)
+│   │   ├── repositories/        consultas SQL, um por tabela
+│   │   ├── services/            regras que usam mais de um repositório
+│   │   ├── controllers/         um método por rota
+│   │   ├── middlewares/         login, perfil de administrador, erros
+│   │   ├── scripts/             criarAdmin
+│   │   └── types/               tipos extras (dados da sessão)
+│   ├── data/                    arquivo do banco (não vai para o Git)
+│   ├── uploads/                 fotos dos itens, públicas (não vai para o Git)
+│   └── provas/                  provas de posse, privadas (não vai para o Git)
+├── docs/                        documentação (SRS, diagramas)
+└── tests/                       plano de testes
 ```
 
-O caminho de uma requisição é: `routes` → `controllers` → `models` → banco.
+O caminho de uma requisição é: `App.ts` (rota) → `controllers` → `services` → `repositories` → banco.
+As classes de `module/` carregam as regras de negócio (validações, ciclo de vida do item) e são usadas em todas as camadas.
 
 ## Onde fica cada requisito
 
-| Requisito | Rotas | Controller | Model | Páginas |
-| --- | --- | --- | --- | --- |
-| RF01 Cadastro e login | `auth.routes.js` | `autenticacao.controller.js` | `usuario.model.js` | `login.html`, `cadastro.html` |
-| RF01.6 Recuperar senha ✅ | `auth.routes.js` | `autenticacao.controller.js` | `recuperacao-senha.model.js` | `esqueci-senha.html`, `redefinir-senha.html` |
-| RF02 Registro de item | `itens.routes.js` | `itens.controller.js` | `item.model.js` | `novo-item.html` |
-| RF03 Busca | `itens.routes.js` | `itens.controller.js` | `item.model.js` | `itens.html`, `item.html` |
-| RF04 Reivindicação (com provas de posse) | `reivindicacoes.routes.js` | `reivindicacoes.controller.js` | `reivindicacao.model.js` | `item.html`, `minhas-reivindicacoes.html` |
-| RF05 Devolução | `devolucoes.routes.js` | `devolucoes.controller.js` | `devolucao.model.js` | `admin.html` |
-| RF05.4 e RF05.5 Relatório e CSV ✅ | `devolucoes.routes.js` | `devolucoes.controller.js` | `devolucao.model.js` | `admin.html` |
+✅ = pronto. Os outros respondem "Ainda não implementado (RFxx)" até alguém programar o método no controller.
 
-As rotas já existem e respondem "Ainda não implementado" até alguém programar o controller. Cada função tem o requisito do SRS no nome (por exemplo `aImplementar('RF01.3')`).
+| Requisito | Controller | Service / Repository | Entidades | Páginas |
+| --- | --- | --- | --- | --- |
+| RF01.3 e RF01.4 Login e logout ✅ | `AutenticacaoController` | `AutenticacaoService`, `UsuarioRepository` | `Usuario` | `login.html` |
+| RF01.1, RF01.2, RF01.5 Cadastro | `AutenticacaoController` | `UsuarioRepository` | `Usuario` | `cadastro.html` |
+| RF01.6 Recuperar senha ✅ | `AutenticacaoController` | `RecuperacaoSenhaService`, `RecuperacaoSenhaRepository`, `EmailService` | `Usuario` | `esqueci-senha.html`, `redefinir-senha.html` |
+| RF02 Registro de item | `ItemController` | `ItemRepository` | `Item`, `Foto`, `HistoricoStatus` | `novo-item.html` |
+| RF02.3 Categorias e locais | `ReferenciaController` | `CategoriaRepository`, `LocalRepository` | `Categoria`, `Local` | `novo-item.html`, `itens.html` |
+| RF03 Busca | `ItemController` | `ItemRepository` | `Item` | `itens.html`, `item.html` |
+| RF04 Reivindicação | `ReivindicacaoController` | `ReivindicacaoRepository` | `Reivindicacao`, `ProvaPosse`, `Mensagem` | `item.html`, `minhas-reivindicacoes.html` |
+| RF05.1 a RF05.3 Devolução | `DevolucaoController` | `DevolucaoRepository` | `Devolucao` | `admin.html` |
+| RF05.4 e RF05.5 Relatório e CSV ✅ | `DevolucaoController` | `RelatorioService`, `DevolucaoRepository` | `RelatorioDevolucoes`, `PeriodoDeDatas` | `admin.html` |
+
+Os repositórios que ainda estão vazios trazem, no comentário do topo, a lista de métodos a implementar.
 
 ## Trabalhando em equipe com Git
 
@@ -85,4 +110,5 @@ git commit -m "RF01: cadastro de usuário"
 git push -u origin feature/rf01-cadastro
 ```
 
-Nunca envie o arquivo `.env` nem o banco (`data/`): o `.gitignore` já bloqueia os dois.
+Antes de abrir o Pull Request, rode `npm run build` em `server/` para conferir se não há erro de tipo.
+Nunca envie o arquivo `.env` nem o banco (`server/data/`): o `.gitignore` já bloqueia os dois.
