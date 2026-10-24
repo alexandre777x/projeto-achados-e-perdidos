@@ -217,6 +217,76 @@ describe("ItemService.buscar (RF03.1 a RF03.3)", () => {
   });
 });
 
+describe("ItemService.buscar: acentos e \"Carregar mais\"", () => {
+  // Cenário próprio, com títulos que só existem aqui
+  const marca = "Wk";
+  const ids = {
+    relogio: criarItem({ registradoPor: admin.id, titulo: `${marca} Relógio dourado`, local: "Ginásio, arquibancada", dataRegistro: "2026-08-01 10:00:00" }),
+    acao: criarItem({ registradoPor: admin.id, titulo: `${marca} Apostila`, descricao: "AÇÃO SOCIAL na capa", local: "Cantina", dataRegistro: "2026-08-02 10:00:00" }),
+    simples: criarItem({ registradoPor: admin.id, titulo: `${marca} Relogio de pulso`, local: "Bloco A", dataRegistro: "2026-08-03 10:00:00" }),
+  };
+  const buscar = (consulta: Record<string, unknown>) =>
+    servico.buscar({ ...consulta, q: `${marca} ${consulta.q ?? ""}`.trim() }).map((i) => i.id);
+
+  test("palavra sem acento acha texto com acento, e o contrário", () => {
+    assert.deepEqual(buscar({ q: "relogio" }), [ids.simples, ids.relogio]);
+    assert.deepEqual(buscar({ q: "RELÓGIO" }), [ids.simples, ids.relogio]);
+    assert.deepEqual(buscar({ q: "acao" }), [ids.acao], "maiúscula com acento na descrição");
+    assert.deepEqual(buscar({ q: "ginasio" }), [ids.relogio], "no local");
+    assert.deepEqual(buscar({ local: "GINÁSIO" }), [ids.relogio], "no filtro de local");
+  });
+
+  test("inicio pula os já mostrados, na mesma ordem", () => {
+    assert.deepEqual(buscar({ limite: "2" }), [ids.simples, ids.acao]);
+    assert.deepEqual(buscar({ limite: "2", inicio: "2" }), [ids.relogio]);
+    assert.deepEqual(buscar({ limite: "2", inicio: "3" }), []);
+    assert.deepEqual(buscar({ inicio: "" }), [ids.simples, ids.acao, ids.relogio], "vazio começa do início");
+  });
+
+  test("inicio inválido: 400", () => {
+    for (const inicio of ["-1", "abc", "1.5", "100001"]) {
+      assert.throws(() => servico.buscar({ inicio }), erroDeNegocio(400, "Início"), inicio);
+    }
+  });
+});
+
+describe("ItemService.listarParados", () => {
+  const antigo = criarItem({ registradoPor: admin.id, titulo: "Parado antigo", dataRegistro: "2020-01-01 10:00:00" });
+  const quarentaDias = criarItem({
+    registradoPor: admin.id,
+    titulo: "Parado 40 dias",
+    dataRegistro: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString().replace("T", " ").slice(0, 19),
+  });
+  const recente = criarItem({ registradoPor: admin.id, titulo: "Chegou agora" });
+  const devolvido = criarItem({ registradoPor: admin.id, titulo: "Já devolvido", status: StatusItem.DEVOLVIDO, dataRegistro: "2020-01-01 10:00:00" });
+  const ids = (dias?: unknown) => servico.listarParados(dias).map((i) => i.id);
+
+  test("padrão de 30 dias: só disponíveis antigos, do mais antigo para o mais novo", () => {
+    const lista = ids();
+    assert.ok(lista.indexOf(antigo) < lista.indexOf(quarentaDias));
+    assert.ok(lista.includes(antigo) && lista.includes(quarentaDias));
+    assert.ok(!lista.includes(recente), "registrado agora");
+    assert.ok(!lista.includes(devolvido), "devolvido não está mais sob custódia");
+  });
+
+  test("traz quantos dias está parado", () => {
+    const item = servico.listarParados("30").find((i) => i.id === quarentaDias);
+    assert.equal(item?.diasParado, 40);
+    assert.equal(item?.status, StatusItem.DISPONIVEL);
+  });
+
+  test("outro número de dias muda o corte", () => {
+    assert.ok(!ids("60").includes(quarentaDias));
+    assert.ok(ids("60").includes(antigo));
+  });
+
+  test("dias inválidos: 400", () => {
+    for (const dias of ["0", "-5", "abc", "3651"]) {
+      assert.throws(() => servico.listarParados(dias), erroDeNegocio(400, "dias"), dias);
+    }
+  });
+});
+
 describe("ItemService.detalhar (RF03.5)", () => {
   test("público vê DISPONIVEL e EM_REIVINDICACAO, com categoria, local e fotos", () => {
     for (const status of [StatusItem.DISPONIVEL, StatusItem.EM_REIVINDICACAO]) {

@@ -301,6 +301,17 @@ describe("rotas de itens: ids e ordem das rotas", () => {
     assert.ok(Array.isArray(r.corpo));
   });
 
+  test("/itens/parados: só administrador, e não é confundida com /itens/:id", async () => {
+    const id = criarItem({ registradoPor: autor.id, dataRegistro: "2020-01-01 10:00:00" });
+    const { n: aluno } = await logado(PerfilUsuario.ALUNO);
+    assert.equal((await aluno.pedir("/api/itens/parados")).status, 403);
+    const { n } = await logado(PerfilUsuario.ADMINISTRADOR);
+    const r = await n.pedir("/api/itens/parados?dias=30");
+    assert.equal(r.status, 200);
+    assert.ok((r.corpo as { id: number }[]).some((i) => i.id === id));
+    assert.equal((await n.pedir("/api/itens/parados?dias=zero")).status, 400);
+  });
+
   test("confirmar recebimento e editar pela API", async () => {
     const { n } = await logado(PerfilUsuario.ADMINISTRADOR);
     const id = criarItem({ registradoPor: autor.id, status: StatusItem.AGUARDANDO_RECEBIMENTO });

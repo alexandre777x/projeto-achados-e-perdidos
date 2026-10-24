@@ -4,7 +4,7 @@ import { StatusItem } from "../module/StatusItem";
 import { ErroDeNegocio } from "../module/ErroDeNegocio";
 import { PerfilUsuario } from "../module/PerfilUsuario";
 import { PeriodoDeDatas } from "../module/PeriodoDeDatas";
-import { ItemRepository, ItemResumo } from "../repositories/ItemRepository";
+import { ItemParado, ItemRepository, ItemResumo } from "../repositories/ItemRepository";
 import { CategoriaRepository } from "../repositories/CategoriaRepository";
 
 /** O que vem do formulário: o id da categoria chega como texto. */
@@ -30,11 +30,14 @@ export interface ConsultaBusca {
   local?: unknown;
   ordem?: unknown;
   limite?: unknown;
+  inicio?: unknown;
 }
 
 /** Registro (RF02), manutenção pelo administrador (RF02.6) e busca (RF03) dos itens. */
 export class ItemService {
   public static readonly LIMITE_BUSCA = 60;
+  /** A partir de quantos dias disponível sem ninguém buscar um item conta como parado. */
+  public static readonly DIAS_PARADO = 30;
 
   private readonly itemRepo = new ItemRepository();
   private readonly categoriaRepo = new CategoriaRepository();
@@ -53,11 +56,11 @@ export class ItemService {
   }
 
   /**
-   * RF03.1 a RF03.3, a partir da URL: ?categoria=&de=&ate=&q=&local=&ordem=&limite=.
+   * RF03.1 a RF03.3, a partir da URL: ?categoria=&de=&ate=&q=&local=&ordem=&limite=&inicio=.
    * O local é texto livre (MR01): o filtro de local procura as palavras digitadas só nele,
-   * e a palavra-chave (q) procura no título, na descrição e no local.
+   * e a palavra-chave (q) procura no título, na descrição e no local, sem ligar para acentos.
    * ordem: "recentes" (padrão) ou "antigos", pela data de registro.
-   * Devolve no máximo LIMITE_BUSCA itens; quem quiser ver mais refina os filtros.
+   * Devolve no máximo LIMITE_BUSCA itens por vez; inicio pula os já mostrados ("Carregar mais").
    */
   public buscar(consulta: ConsultaBusca): ItemResumo[] {
     const ordem = String(consulta.ordem ?? "recentes");
@@ -72,7 +75,31 @@ export class ItemService {
       palavrasDoLocal: ItemService.lerPalavras(consulta.local, "O filtro de local pode ter no máximo 100 caracteres."),
       maisAntigosPrimeiro: ordem === "antigos",
       limite: Math.min(limite ?? ItemService.LIMITE_BUSCA, ItemService.LIMITE_BUSCA),
+      inicio: ItemService.lerInteiro(consulta.inicio, 0, 100000, "Início da lista inválido.") ?? 0,
     });
+  }
+
+  /**
+   * Itens disponíveis há pelo menos `dias` dias (padrão: DIAS_PARADO) sem ninguém buscar,
+   * para a administração decidir doação ou descarte.
+   */
+  public listarParados(dias: unknown): ItemParado[] {
+    const minimo =
+      ItemService.lerInteiro(dias, 1, 3650, "Informe os dias como um número de 1 a 3650.") ?? ItemService.DIAS_PARADO;
+    return this.itemRepo.listarParados(minimo);
+  }
+
+  /** Inteiro de um parâmetro da URL entre min e max; vazio vira null. */
+  private static lerInteiro(valor: unknown, min: number, max: number, mensagem: string): number | null {
+    if (valor === undefined || valor === "") {
+      return null;
+    }
+    const texto = String(valor);
+    const numero = Number(texto);
+    if (!/^\d+$/.test(texto) || numero < min || numero > max) {
+      throw new ErroDeNegocio(mensagem);
+    }
+    return numero;
   }
 
   /** Separa o texto de um filtro em palavras; vazio vira lista vazia. */

@@ -16,6 +16,15 @@ export class Database {
     fs.mkdirSync(path.dirname(Configuracao.caminhoBanco), { recursive: true });
     this.conexao = new BetterSqlite3(Configuracao.caminhoBanco);
     this.conexao.pragma("foreign_keys = ON");
+    // Para a busca sem acento: no SQL, sem_acento(coluna) LIKE '%padrao%'
+    this.conexao.function("sem_acento", { deterministic: true }, (texto) =>
+      texto === null ? null : Database.semAcento(String(texto))
+    );
+  }
+
+  /** Minúsculas e sem acentos: "Eletrônicos" vira "eletronicos" e "AÇÃO" vira "acao". */
+  public static semAcento(texto: string): string {
+    return texto.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
   }
 
   public static getInstancia(): Database {

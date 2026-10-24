@@ -41,6 +41,11 @@ export class ItemController {
     res.json(this.servico.listarAguardandoRecebimento().map((item) => this.comFotos(item)));
   }
 
+  /** Itens disponíveis há muito tempo sem ninguém buscar (?dias=, padrão 30). */
+  public listarParados(req: Request, res: Response): void {
+    res.json(this.servico.listarParados(req.query.dias));
+  }
+
   /** RF02.6 */
   public confirmarRecebimento(req: Request, res: Response): void {
     const item = this.servico.confirmarRecebimento(ItemController.id(req), SessaoDaRequisicao.usuarioId(req));

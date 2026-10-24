@@ -4,6 +4,7 @@ import { Foto } from "../module/Foto";
 import { StatusItem } from "../module/StatusItem";
 import { ErroDeNegocio } from "../module/ErroDeNegocio";
 import { PeriodoDeDatas } from "../module/PeriodoDeDatas";
+import { Database } from "../database/Database";
 
 interface LinhaItem {
   id: number;
@@ -27,6 +28,11 @@ interface LinhaResumo {
   foto: string | null;
 }
 
+interface LinhaParado extends LinhaResumo {
+  data_registro: string;
+  dias_parado: number;
+}
+
 interface LinhaFoto {
   id: number;
   caminho: string;
@@ -43,6 +49,8 @@ export interface FiltrosBusca {
   /** Ordem pela data de registro: mais recentes (padrão) ou mais antigos primeiro. */
   maisAntigosPrimeiro: boolean;
   limite: number;
+  /** Quantos resultados pular, para o "Carregar mais". */
+  inicio: number;
 }
 
 /** Um item na lista de resultados: nome da categoria no lugar do id e a primeira foto. */
@@ -56,6 +64,12 @@ export interface ItemResumo {
   foto: string | null;
 }
 
+/** Item disponível há muito tempo sem ninguém buscar: para a administração decidir o destino. */
+export interface ItemParado extends ItemResumo {
+  dataRegistro: string;
+  diasParado: number;
+}
+
 /** Tabelas item, foto e historico_status (RF02, RF03 e RN05). */
 export class ItemRepository extends Repositorio {
   /**
@@ -63,6 +77,7 @@ export class ItemRepository extends Repositorio {
    * mais antigos. O período é da data do achado. Cada palavra precisa aparecer no
    * título, na descrição ou no local (texto livre: "cantina" acha "perto da cantina").
    * O filtro de local procura as palavras dele só no local.
+   * A comparação ignora acentos e maiúsculas: "eletronico" acha "Eletrônico".
    */
   public buscar(filtros: FiltrosBusca): ItemResumo[] {
     const condicoes = ["i.status = ?", "i.data_achado BETWEEN ? AND ?"];
@@ -75,12 +90,13 @@ export class ItemRepository extends Repositorio {
     for (const palavra of filtros.palavras) {
       const padrao = ItemRepository.padraoLike(palavra);
       condicoes.push(
-        "(i.titulo LIKE ? ESCAPE '\\' OR i.descricao LIKE ? ESCAPE '\\' OR i.local_encontrado LIKE ? ESCAPE '\\')"
+        "(sem_acento(i.titulo) LIKE ? ESCAPE '\\' OR sem_acento(i.descricao) LIKE ? ESCAPE '\\'" +
+          " OR sem_acento(i.local_encontrado) LIKE ? ESCAPE '\\')"
       );
       valores.push(padrao, padrao, padrao);
     }
     for (const palavra of filtros.palavrasDoLocal) {
-      condicoes.push("i.local_encontrado LIKE ? ESCAPE '\\'");
+      condicoes.push("sem_acento(i.local_encontrado) LIKE ? ESCAPE '\\'");
       valores.push(ItemRepository.padraoLike(palavra));
     }
     const ordem = filtros.maisAntigosPrimeiro ? "ASC" : "DESC";
@@ -93,23 +109,53 @@ export class ItemRepository extends Repositorio {
          JOIN categoria c ON c.id = i.categoria_id
          WHERE ${condicoes.join(" AND ")}
          ORDER BY i.data_registro ${ordem}, i.id ${ordem}
-         LIMIT ?`
+         LIMIT ? OFFSET ?`
       )
-      .all(...valores, filtros.limite)
+      .all(...valores, filtros.limite, filtros.inicio)
+      .map(ItemRepository.paraResumo);
+  }
+
+  /**
+   * Itens disponíveis registrados há pelo menos `dias` dias, dos mais antigos para os
+   * mais novos: estão sob custódia e ninguém apareceu para buscar.
+   */
+  public listarParados(dias: number): ItemParado[] {
+    return this.db
+      .prepare<[StatusItem, string], LinhaParado>(
+        `SELECT i.id, i.titulo, i.data_achado, i.status, c.nome AS categoria, i.local_encontrado AS local,
+                (SELECT f.caminho FROM foto f WHERE f.item_id = i.id ORDER BY f.id LIMIT 1) AS foto,
+                i.data_registro, CAST(julianday('now') - julianday(i.data_registro) AS INTEGER) AS dias_parado
+         FROM item i
+         JOIN categoria c ON c.id = i.categoria_id
+         WHERE i.status = ? AND i.data_registro <= datetime('now', ?)
+         ORDER BY i.data_registro, i.id`
+      )
+      .all(StatusItem.DISPONIVEL, `-${dias} days`)
       .map((linha) => ({
-        id: linha.id,
-        titulo: linha.titulo,
-        dataAchado: linha.data_achado,
-        status: linha.status,
-        categoria: linha.categoria,
-        local: linha.local,
-        foto: linha.foto ? `/uploads/${linha.foto}` : null,
+        ...ItemRepository.paraResumo(linha),
+        dataRegistro: linha.data_registro,
+        diasParado: linha.dias_parado,
       }));
   }
 
-  /** "%palavra%" para o LIKE: % e _ digitados pelo usuário valem como letra, não como curinga. */
+  private static paraResumo(linha: LinhaResumo): ItemResumo {
+    return {
+      id: linha.id,
+      titulo: linha.titulo,
+      dataAchado: linha.data_achado,
+      status: linha.status,
+      categoria: linha.categoria,
+      local: linha.local,
+      foto: linha.foto ? `/uploads/${linha.foto}` : null,
+    };
+  }
+
+  /**
+   * "%palavra%" para o LIKE, sem acentos e em minúsculas como a coluna comparada.
+   * % e _ digitados pelo usuário valem como letra, não como curinga.
+   */
   private static padraoLike(palavra: string): string {
-    return `%${palavra.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+    return `%${Database.semAcento(palavra).replace(/[\\%_]/g, (c) => "\\" + c)}%`;
   }
 
   /** RF02.1 e RF02.2: grava o item, as fotos e o primeiro registro do histórico (RN05). */

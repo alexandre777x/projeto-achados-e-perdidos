@@ -45,6 +45,10 @@
         <span class="indicador-numero" id="n-aguardando">–</span>
         <span>Aguardando recebimento</span>
       </a>
+      <a class="indicador indicador-rosa" href="#secao-parados">
+        <span class="indicador-numero" id="n-parados">–</span>
+        <span>Parados há mais de 30 dias</span>
+      </a>
       <a class="indicador indicador-cinza" href="#secao-categorias">
         <span class="indicador-numero" id="n-categorias">–</span>
         <span>Categorias</span>
@@ -75,6 +79,25 @@
       <p id="aviso-aguardando" role="status"></p>
       <div class="grade-itens" id="aguardando"></div>
       <p class="suave lista-vazia" id="aguardando-vazio" hidden>Nenhum item aguardando recebimento.</p>
+    </section>
+
+    <section class="cartao secao-admin" id="secao-parados">
+      <div class="secao-topo">
+        <div>
+          <h2>Itens parados</h2>
+          <p class="suave">Disponíveis há muito tempo sem ninguém buscar. Vale decidir se vão para doação ou descarte, conforme a regra do campus.</p>
+        </div>
+        <label class="ordenar" for="dias-parado">Há mais de
+          <select id="dias-parado">
+            <option value="30">30 dias</option>
+            <option value="60">60 dias</option>
+            <option value="90">90 dias</option>
+          </select>
+        </label>
+      </div>
+      <ul class="lista-reivindicacoes" id="lista-parados"></ul>
+      <p class="suave lista-vazia" id="parados-vazio" hidden>Nenhum item parado há tanto tempo.</p>
+      <p id="aviso-parados" role="status"></p>
     </section>
 
     <section class="cartao secao-admin" id="secao-categorias">
@@ -291,6 +314,51 @@
     }
 
     carregarAguardando().catch((erro) => avisarAguardando(erro.message, true));
+
+    // Itens disponíveis há muito tempo; o número do resumo é sempre o de 30 dias
+    const selectDias = document.getElementById('dias-parado');
+
+    async function carregarParados() {
+      const dias = selectDias.value;
+      const itens = await api(`/itens/parados?dias=${dias}`);
+      if (dias === '30') contar('n-parados', itens.length);
+      document.getElementById('parados-vazio').hidden = itens.length > 0;
+      document.getElementById('lista-parados').replaceChildren(...itens.map((item) => {
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.className = 'reivindicacao reivindicacao-compacta item-parado';
+        link.href = `/item.html?id=${item.id}`;
+
+        const corpo = document.createElement('div');
+        corpo.className = 'reivindicacao-corpo';
+        const titulo = document.createElement('h3');
+        titulo.textContent = item.titulo;
+        const detalhes = document.createElement('p');
+        detalhes.className = 'suave reivindicacao-datas';
+        detalhes.textContent = `${item.categoria} · ${item.local} · registrado em ${dataHora(item.dataRegistro)}`;
+        const parado = document.createElement('span');
+        parado.className = 'etiqueta-dias';
+        parado.textContent = `Parado há ${item.diasParado} dias`;
+        corpo.append(titulo, detalhes, parado);
+
+        const acao = document.createElement('span');
+        acao.className = 'reivindicacao-acao';
+        acao.textContent = 'Ver item';
+
+        link.append(fotoDoItem(item.foto), corpo, acao);
+        li.append(link);
+        return li;
+      }));
+    }
+
+    function avisarParados(erro) {
+      const aviso = document.getElementById('aviso-parados');
+      aviso.textContent = erro.message;
+      aviso.className = 'erro';
+    }
+
+    selectDias.addEventListener('change', () => carregarParados().catch(avisarParados));
+    carregarParados().catch(avisarParados);
 
     // RF02.3: lista de categorias mantida pelo administrador
     function configurarLista(rota, idLista, idForm, idAviso, mensagemCriado) {

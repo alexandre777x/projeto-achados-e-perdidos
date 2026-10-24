@@ -37,7 +37,7 @@ Testes que olham o código: cobrem os desvios (if/else) das regras de negócio R
 Na pasta `server/`:
 
 ```bash
-npm test                # roda os 251 testes (cerca de 4 segundos)
+npm test                # roda os 259 testes (cerca de 4 segundos)
 npm run test:cobertura  # roda e mostra a cobertura de linhas e de desvios por arquivo
 ```
 
@@ -70,11 +70,11 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 
 ### Resultado de 23/10/2026
 
-**251 testes, 251 aprovados** (24/10/2026, com o filtro de local, a ordenação da busca, a foto do item nas reivindicações, o contador de mensagens não lidas e o e-mail da decisão).
+**259 testes, 259 aprovados** (24/10/2026, com o filtro de local, a ordenação da busca, a foto do item nas reivindicações, o contador de mensagens não lidas, o e-mail da decisão, a busca sem acento, o "Carregar mais" e os itens parados).
 
 | Cobertura (`npm run test:cobertura`) | Linhas | Desvios (branches) | Funções |
 | --- | --- | --- | --- |
-| Total | 96,9% | 93,4% | 90,5% |
+| Total | 97,0% | 93,4% | 90,7% |
 
 Os services (onde ficam as regras) e os models principais têm de 96% a 99% das linhas cobertas. Na leitura do relatório:
 

@@ -124,8 +124,9 @@ export class App {
   private configurarRotasDeItens(): void {
     const c = this.itemController;
     this.api.get("/itens", this.exigirLogin, (req, res) => c.buscar(req, res));
-    // Antes de /itens/:id, senão "aguardando-recebimento" seria lido como um id.
+    // Antes de /itens/:id, senão "aguardando-recebimento" e "parados" seriam lidos como um id.
     this.api.get("/itens/aguardando-recebimento", this.exigirAdmin, (req, res) => c.listarAguardandoRecebimento(req, res));
+    this.api.get("/itens/parados", this.exigirAdmin, (req, res) => c.listarParados(req, res));
     this.api.get("/itens/:id", this.exigirLogin, (req, res) => c.detalhar(req, res));
     // O login vem antes do upload: quem não entrou não chega a gravar arquivos.
     this.api.post("/itens", this.exigirLogin, this.receberFotos, (req, res) => c.registrar(req, res));

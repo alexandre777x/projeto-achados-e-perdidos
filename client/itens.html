@@ -36,7 +36,7 @@
         </svg>
         <input type="search" id="q" name="q" maxlength="100" placeholder="Ex.: mochila preta, carregador, cantina">
       </div>
-      <p class="suave dica-campo">Procura no título, na descrição e no lugar onde o item foi encontrado.</p>
+      <p class="suave dica-campo">Procura no título, na descrição e no lugar onde o item foi encontrado, com ou sem acento.</p>
 
       <!-- Categoria rápida: cada chip escolhe a categoria e já busca -->
       <div class="chips" id="chips" role="group" aria-label="Categoria rápida"></div>
@@ -88,6 +88,9 @@
     </div>
 
     <div class="grade-itens" id="resultados"></div>
+    <div class="carregar-mais">
+      <button type="button" class="botao-claro" id="carregar-mais" hidden>Carregar mais itens</button>
+    </div>
 
     <section class="banner-fim">
       <div>
@@ -104,7 +107,8 @@
   <script>
     // RF03.1 a RF03.4: busca de itens disponíveis com filtros.
     // Os filtros ficam na URL (?q=&categoria=&local=&de=&ate=&ordem=), como faz a busca da página inicial.
-    const LIMITE = 60;
+    // Itens por vez; pede um a mais para saber se ainda há outros para o "Carregar mais"
+    const POR_PAGINA = 24;
     const FILTROS = ['q', 'categoria', 'local', 'de', 'ate', 'ordem'];
     // Ícone de cada categoria nos chips; categoria nova, criada pelo administrador, usa o padrão
     const ICONES = {
@@ -147,31 +151,48 @@
       );
     }
 
-    async function buscar() {
+    const botaoMais = document.getElementById('carregar-mais');
+    let mostrados = 0;
+
+    // Busca a partir de "inicio"; a primeira página troca a lista, as outras acrescentam
+    async function buscar(inicio = 0) {
       // Só manda os filtros preenchidos
       const consulta = new URLSearchParams();
       for (const [nome, valor] of parametros) if (valor.trim()) consulta.set(nome, valor.trim());
+      const temFiltro = [...consulta.keys()].some((nome) => nome !== 'ordem');
+      consulta.set('limite', POR_PAGINA + 1);
+      consulta.set('inicio', inicio);
 
-      resultados.replaceChildren();
-      mostrar('Buscando...');
+      if (inicio === 0) {
+        resultados.replaceChildren();
+        mostrar('Buscando...');
+      }
+      botaoMais.disabled = true;
       try {
         const itens = await api('/itens?' + consulta);
-        resultados.replaceChildren(...itens.map(cartaoDeItem));
-        const soOrdem = [...consulta.keys()].every((nome) => nome === 'ordem');
-        if (itens.length === 0) {
+        const temMais = itens.length > POR_PAGINA;
+        const pagina = itens.slice(0, POR_PAGINA);
+        resultados.append(...pagina.map(cartaoDeItem));
+        mostrados = inicio + pagina.length;
+        botaoMais.hidden = !temMais;
+
+        if (mostrados === 0) {
           // RF03.4
-          mostrar(soOrdem
-            ? 'Nenhum item disponível no momento.'
-            : 'Nenhum item encontrado com esses filtros. Tente outra palavra ou remova algum filtro.');
-        } else if (itens.length >= LIMITE) {
-          mostrar(`Mostrando ${LIMITE} itens. Use os filtros para encontrar o que procura.`);
+          mostrar(temFiltro
+            ? 'Nenhum item encontrado com esses filtros. Tente outra palavra ou remova algum filtro.'
+            : 'Nenhum item disponível no momento.');
+        } else if (temMais) {
+          mostrar(`Mostrando ${mostrados} itens`);
         } else {
-          mostrar(itens.length === 1 ? '1 item encontrado' : `${itens.length} itens encontrados`);
+          mostrar(mostrados === 1 ? '1 item encontrado' : `${mostrados} itens encontrados`);
         }
       } catch (erro) {
         mostrar(erro.message, true);
       }
+      botaoMais.disabled = false;
     }
+
+    botaoMais.addEventListener('click', () => buscar(mostrados));
 
     // Ao buscar, recarrega a página só com os filtros preenchidos na URL
     formulario.addEventListener('submit', (evento) => {
