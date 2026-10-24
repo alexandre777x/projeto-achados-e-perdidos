@@ -90,6 +90,15 @@ describe("detalhar e listas (RF04.7, RF04.4)", () => {
     assert.equal(d.item.status, StatusItem.EM_REIVINDICACAO);
     assert.match(d.reivindicante as string, /^Pessoa/);
     assert.equal(d.devolucao, null);
+    assert.equal(d.item.foto, null, "item sem foto");
+  });
+
+  test("detalhe traz a primeira foto do item", () => {
+    const quem = aluno();
+    const id = item();
+    sql("INSERT INTO foto (caminho, item_id) VALUES ('c.png', ?), ('d.png', ?)", id, id);
+    const r = servico.abrir(id, "respostas", [], quem);
+    assert.equal(servico.detalhar(r.getId() as number, quem).item.foto, "/uploads/c.png");
   });
 
   test("depois da entrega, o detalhe mostra data e tipo do documento, nunca número", () => {

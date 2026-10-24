@@ -397,20 +397,6 @@ button:hover,
   white-space: pre-line; /* mantém as quebras de linha digitadas na descrição */
 }
 
-.dados {
-  display: grid;
-  grid-template-columns: max-content 1fr;
-  gap: 4px 16px;
-}
-
-.dados dt {
-  font-weight: 600;
-}
-
-.dados dd {
-  margin: 0;
-}
-
 /* Quadro no lugar da foto, para itens sem foto: degradê lilás com ícone de imagem */
 div.item-foto {
   display: flex;
@@ -488,27 +474,6 @@ div.item-foto::after {
 .selo-rejeitada {
   background: var(--cinza-claro);
   color: var(--perigo);
-}
-
-/* Lista de reivindicações */
-.lista-simples {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.lista-simples li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 4px 12px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--cinza-claro);
-}
-
-.lista-simples li:last-child {
-  border-bottom: none;
 }
 
 /* Conversa da reivindicação (RF04.3) */
@@ -2125,4 +2090,287 @@ img.foto-principal {
 
 .barra-botoes .botao-claro {
   border: 1px solid var(--cinza-claro);
+}
+
+/* ==========================================================================
+   Detalhe da reivindicação (reivindicacao.html)
+   ========================================================================== */
+.layout-reivindicacao {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 860px) {
+  .layout-reivindicacao {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.coluna-lateral {
+  display: grid;
+  gap: 20px;
+}
+
+.coluna-lateral .secao-admin {
+  margin: 0;
+}
+
+/* Cartão pequeno do item reivindicado */
+.item-reivindicado {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 4px;
+  padding: 10px;
+  border: 1px solid var(--cinza-claro);
+  border-radius: 12px;
+  color: var(--grafite);
+  text-decoration: none;
+}
+
+.item-reivindicado:hover {
+  border-color: #cdb4f3;
+  background: #faf5ff;
+}
+
+.item-reivindicado .item-foto {
+  flex: none;
+  width: 56px;
+  aspect-ratio: 1;
+  border-radius: 10px;
+}
+
+.item-reivindicado div.item-foto::after {
+  content: none;
+}
+
+.item-reivindicado div.item-foto::before {
+  width: 22px;
+  height: 22px;
+}
+
+.item-reivindicado small {
+  display: block;
+  font-size: 0.78rem;
+}
+
+/* Linha do tempo do pedido */
+.linha-do-tempo {
+  list-style: none;
+  margin: 20px 0 0;
+  padding: 0;
+}
+
+.linha-do-tempo li {
+  position: relative;
+  padding: 0 0 18px 34px;
+}
+
+.linha-do-tempo li:last-child {
+  padding-bottom: 0;
+}
+
+/* Traço que liga uma etapa à próxima */
+.linha-do-tempo li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 24px;
+  bottom: 2px;
+  width: 2px;
+  background: var(--cinza-claro);
+}
+
+.linha-do-tempo li.etapa-feita:not(:last-child)::after {
+  background: var(--sucesso);
+}
+
+.linha-do-tempo li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--cinza-claro);
+  background: #fff;
+}
+
+.linha-do-tempo .etapa-feita::before {
+  border-color: var(--sucesso);
+  background: var(--sucesso) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m5 12 5 5 9-10'/%3E%3C/svg%3E") center / 12px no-repeat;
+}
+
+.linha-do-tempo .etapa-atual::before {
+  border-color: var(--roxo);
+  box-shadow: inset 0 0 0 4px #fff, inset 0 0 0 11px var(--roxo);
+}
+
+.linha-do-tempo .etapa-recusada::before {
+  border-color: var(--perigo);
+  background: var(--perigo) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='3.5' stroke-linecap='round'%3E%3Cpath d='M7 7l10 10M17 7 7 17'/%3E%3C/svg%3E") center / 11px no-repeat;
+}
+
+.linha-do-tempo strong {
+  display: block;
+  font-weight: 600;
+}
+
+.linha-do-tempo .etapa-pendente strong {
+  font-weight: 500;
+  color: var(--texto-suave);
+}
+
+.linha-do-tempo .etapa-atual strong {
+  color: var(--roxo);
+}
+
+.linha-do-tempo small {
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+
+/* O que fazer agora */
+.proximo-passo {
+  margin: 16px 0 0;
+  padding: 12px 14px;
+  border-left: 4px solid var(--roxo);
+  border-radius: 10px;
+  background: var(--roxo-fundo);
+  font-weight: 500;
+}
+
+.proximo-passo:empty {
+  display: none;
+}
+
+.respostas {
+  margin-top: 0;
+}
+
+/* Arquivos de prova como pílulas com clipe */
+.arquivos {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+}
+
+.arquivos a {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 6px 12px;
+  border: 1px solid var(--cinza-claro);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.arquivos a::before {
+  content: "";
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: currentColor;
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m21 11-8.5 8.5a5 5 0 0 1-7-7L14 4a3.5 3.5 0 0 1 5 5l-8.5 8.5a2 2 0 0 1-3-3L15 7'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.arquivos a:hover {
+  border-color: #cdb4f3;
+  background: #faf5ff;
+}
+
+/* Decisão: aprovar em verde */
+.botao-aprovar {
+  background: var(--sucesso);
+}
+
+.botao-aprovar:hover {
+  background: #17633f;
+}
+
+#form-rejeicao .botao-perigo {
+  margin-top: 10px;
+}
+
+/* Conversa: rola por dentro e a caixa de texto fica embaixo */
+#secao-conversa .conversa {
+  max-height: 420px;
+  overflow-y: auto;
+  padding: 4px 2px;
+}
+
+.mensagem {
+  border-bottom-left-radius: 4px;
+}
+
+.mensagem-minha {
+  border-bottom-left-radius: var(--raio);
+  border-bottom-right-radius: 4px;
+}
+
+.nova-mensagem {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.nova-mensagem textarea {
+  resize: vertical;
+}
+
+.nova-mensagem button {
+  margin: 0;
+  flex: none;
+}
+
+/* Comparar com o anúncio (só administração) */
+#anuncio .miniaturas {
+  margin: 12px 0 0;
+}
+
+#anuncio .dados-item {
+  margin-top: 12px;
+}
+
+/* Aviso de outras reivindicações abertas para o mesmo item */
+.aviso-outras {
+  margin: 12px 0 4px;
+  padding: 12px 14px;
+  border-left: 4px solid var(--alerta);
+  border-radius: 10px;
+  background: var(--alerta-fundo);
+  color: var(--alerta);
+  font-size: 0.92rem;
+}
+
+.aviso-outras ul {
+  margin: 6px 0 0;
+  padding-left: 18px;
+}
+
+.aviso-outras a {
+  color: var(--alerta);
+  font-weight: 600;
+}
+
+/* Respostas prontas logo acima da caixa de mensagem */
+.respostas-prontas {
+  margin: 14px 0 0;
+}
+
+.respostas-prontas .chip {
+  font-size: 0.8rem;
+  padding: 5px 12px;
 }

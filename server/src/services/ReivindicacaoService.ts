@@ -69,7 +69,12 @@ export class ReivindicacaoService {
     return {
       ...reivindicacao.toJSON(),
       reivindicante: this.usuarioRepo.buscarPorId(reivindicacao.getReivindicanteId())?.getNome(),
-      item: { id: item?.getId(), titulo: item?.getTitulo(), status: item?.getStatus() },
+      item: {
+        id: item?.getId(),
+        titulo: item?.getTitulo(),
+        status: item?.getStatus(),
+        foto: this.itemRepo.listarFotos(reivindicacao.getItemId())[0]?.toJSON().url ?? null,
+      },
       provas: this.reivindicacaoRepo.listarProvas(id),
       // RF05.2: só o tipo do documento conferido, nunca o número (RNF10)
       devolucao: devolucao

@@ -22,74 +22,125 @@
     </nav>
   </header>
 
-  <main>
-    <p><a id="voltar" href="/minhas-reivindicacoes.html">← Voltar</a></p>
+  <main class="main-largo">
+    <a class="voltar" id="voltar" href="/minhas-reivindicacoes.html">Voltar</a>
     <p id="aviso" role="status"></p>
 
-    <article class="cartao" id="detalhes" hidden>
-      <h1>Reivindicação nº <span id="numero"></span></h1>
-      <span id="selo" class="selo"></span>
-      <dl class="dados">
-        <dt>Item</dt><dd><a id="item"></a></dd>
-        <dt>Quem pediu</dt><dd id="reivindicante"></dd>
-        <dt>Aberta em</dt><dd id="dataAbertura"></dd>
-        <dt id="rotulo-decisao" hidden>Decidida em</dt><dd id="dataDecisao" hidden></dd>
-        <dt id="rotulo-motivo" hidden>Motivo da rejeição</dt><dd id="motivo" hidden></dd>
-        <dt id="rotulo-devolucao" hidden>Entregue em</dt><dd id="devolucao" hidden></dd>
-      </dl>
-      <p id="proximo-passo"></p>
+    <!-- Detalhes à esquerda; decisão, devolução e conversa à direita -->
+    <div class="layout-reivindicacao">
+      <article class="cartao info-item" id="detalhes" hidden>
+        <span id="selo" class="selo"></span>
+        <h1>Reivindicação nº <span id="numero"></span></h1>
 
-      <h2>Respostas de validação</h2>
-      <p id="respostas" class="texto-livre"></p>
+        <!-- O item reivindicado, com foto -->
+        <a class="item-reivindicado" id="item-link">
+          <span id="item-foto"></span>
+          <span>
+            <small class="suave">Item reivindicado</small>
+            <strong id="item"></strong>
+          </span>
+        </a>
 
-      <h2>Provas de posse</h2>
-      <ul id="provas"></ul>
-      <p class="suave" id="sem-provas" hidden>Nenhum arquivo anexado.</p>
-    </article>
+        <!-- Andamento: enviada, decisão e entrega -->
+        <ol class="linha-do-tempo" id="linha-do-tempo"></ol>
+        <p class="proximo-passo" id="proximo-passo"></p>
 
-    <!-- RF04.4: decisão da administração -->
-    <section class="cartao" id="decisao" hidden>
-      <h2>Decisão</h2>
-      <p class="suave">Ao aprovar, as outras reivindicações abertas deste item são rejeitadas.</p>
-      <button type="button" id="aprovar">Aprovar</button>
-      <form id="form-rejeicao" novalidate>
-        <label for="motivo-rejeicao">Motivo da rejeição</label>
-        <textarea id="motivo-rejeicao" name="motivo" rows="2" maxlength="500" required></textarea>
-        <button type="submit" class="botao-claro">Rejeitar</button>
-      </form>
-      <p id="aviso-decisao" role="status"></p>
-    </section>
+        <dl class="dados-item">
+          <div>
+            <dt>Quem pediu</dt>
+            <dd id="reivindicante"></dd>
+          </div>
+          <div id="bloco-motivo" hidden>
+            <dt>Motivo da rejeição</dt>
+            <dd id="motivo"></dd>
+          </div>
+          <div id="bloco-devolucao" hidden>
+            <dt>Entregue em</dt>
+            <dd id="devolucao"></dd>
+          </div>
+        </dl>
 
-    <!-- RF05.1 a RF05.3: entrega do objeto ao dono -->
-    <section class="cartao" id="secao-devolucao" hidden>
-      <h2>Registrar devolução</h2>
-      <p class="suave">Confira um documento com foto de quem está retirando. Só o tipo do documento é guardado, nunca o número.</p>
-      <form id="form-devolucao" novalidate>
-        <label for="tipoDocumento">Documento conferido</label>
-        <select id="tipoDocumento" name="tipoDocumento" required>
-          <option value="">Escolha...</option>
-          <option value="RG">RG</option>
-          <option value="CNH">CNH</option>
-          <option value="CARTEIRA_ESTUDANTIL">Carteira estudantil</option>
-          <option value="OUTRO">Outro documento com foto</option>
-        </select>
-        <button type="submit">Registrar devolução</button>
-      </form>
-      <p id="aviso-devolucao" role="status"></p>
-    </section>
+        <h2>Respostas de validação</h2>
+        <dl class="dados-item respostas" id="respostas"></dl>
 
-    <!-- RF04.3: conversa entre o reivindicante e a administração -->
-    <section class="cartao" id="secao-conversa" hidden>
-      <h2>Conversa com a <span id="com-quem">administração</span></h2>
-      <div class="conversa" id="conversa"></div>
-      <p class="suave" id="conversa-vazia" hidden>Nenhuma mensagem ainda.</p>
-      <form id="form-mensagem" novalidate>
-        <label for="texto">Nova mensagem</label>
-        <textarea id="texto" name="texto" rows="3" maxlength="1000" required></textarea>
-        <button type="submit">Enviar</button>
-      </form>
-      <p id="aviso-mensagem" role="status"></p>
-    </section>
+        <h2>Provas de posse</h2>
+        <ul class="arquivos" id="provas"></ul>
+        <p class="suave" id="sem-provas" hidden>Nenhum arquivo anexado.</p>
+      </article>
+
+      <div class="coluna-lateral">
+        <!-- Só para a administração: o anúncio do item, para comparar com as respostas -->
+        <section class="cartao secao-admin" id="anuncio" hidden>
+          <h2>Comparar com o anúncio</h2>
+          <div class="miniaturas" id="anuncio-fotos"></div>
+          <dl class="dados-item">
+            <div>
+              <dt>Descrição do anúncio</dt>
+              <dd class="texto-livre" id="anuncio-descricao"></dd>
+            </div>
+            <div>
+              <dt>Onde foi encontrado</dt>
+              <dd id="anuncio-local"></dd>
+            </div>
+            <div>
+              <dt>Categoria e data do achado</dt>
+              <dd id="anuncio-categoria"></dd>
+            </div>
+          </dl>
+        </section>
+
+        <!-- RF04.4: decisão da administração -->
+        <section class="cartao secao-admin" id="decisao" hidden>
+          <h2>Decisão</h2>
+          <p class="suave">Compare as respostas com o objeto. Ao aprovar, as outras reivindicações abertas deste item são rejeitadas.</p>
+          <div class="aviso-outras" id="outras" hidden>
+            <strong id="outras-titulo"></strong>
+            <ul id="outras-lista"></ul>
+          </div>
+          <button type="button" class="botao-largo botao-aprovar" id="aprovar">Aprovar reivindicação</button>
+          <form id="form-rejeicao" novalidate>
+            <label for="motivo-rejeicao">Ou rejeite, explicando o motivo</label>
+            <textarea id="motivo-rejeicao" name="motivo" rows="2" maxlength="500" required
+                      placeholder="Ex.: as respostas não conferem com o adesivo do objeto"></textarea>
+            <button type="submit" class="botao-perigo botao-largo">Rejeitar</button>
+          </form>
+          <p id="aviso-decisao" role="status"></p>
+        </section>
+
+        <!-- RF05.1 a RF05.3: entrega do objeto ao dono -->
+        <section class="cartao secao-admin" id="secao-devolucao" hidden>
+          <h2>Registrar devolução</h2>
+          <p class="suave">Confira um documento com foto de quem está retirando. Só o tipo do documento é guardado, nunca o número.</p>
+          <form id="form-devolucao" novalidate>
+            <label for="tipoDocumento">Documento conferido</label>
+            <select id="tipoDocumento" name="tipoDocumento" required>
+              <option value="">Escolha...</option>
+              <option value="RG">RG</option>
+              <option value="CNH">CNH</option>
+              <option value="CARTEIRA_ESTUDANTIL">Carteira estudantil</option>
+              <option value="OUTRO">Outro documento com foto</option>
+            </select>
+            <button type="submit" class="botao-largo">Registrar devolução</button>
+          </form>
+          <p id="aviso-devolucao" role="status"></p>
+        </section>
+
+        <!-- RF04.3: conversa entre o reivindicante e a administração -->
+        <section class="cartao secao-admin" id="secao-conversa" hidden>
+          <h2>Conversa com a <span id="com-quem">administração</span></h2>
+          <div class="conversa" id="conversa"></div>
+          <p class="suave lista-vazia" id="conversa-vazia" hidden>Nenhuma mensagem ainda.</p>
+          <!-- Só para a administração: um clique preenche a mensagem, que ainda pode ser editada -->
+          <div class="chips respostas-prontas" id="respostas-prontas" role="group" aria-label="Respostas prontas" hidden></div>
+          <form class="nova-mensagem" id="form-mensagem" novalidate>
+            <label class="so-leitor" for="texto">Nova mensagem</label>
+            <textarea id="texto" name="texto" rows="2" maxlength="1000" required placeholder="Escreva uma mensagem..."></textarea>
+            <button type="submit">Enviar</button>
+          </form>
+          <p id="aviso-mensagem" role="status"></p>
+        </section>
+      </div>
+    </div>
   </main>
 
   <script src="/js/api.js"></script>
@@ -104,7 +155,7 @@
     function mostrar(elemento, texto, ehErro) {
       const el = document.getElementById(elemento);
       el.textContent = texto;
-      el.className = ehErro ? 'erro' : '';
+      el.className = !texto ? '' : ehErro ? 'erro' : 'aviso-sucesso';
     }
 
     function dataHora(texto) {
@@ -118,41 +169,98 @@
       return el;
     }
 
+    // Etapas do pedido: cada uma feita, atual, pendente ou recusada
+    function linhaDoTempo(r) {
+      const etapas = [{ titulo: 'Pedido enviado', data: r.dataAbertura, estado: 'feita' }];
+      if (r.status === 'ABERTA') {
+        etapas.push({ titulo: 'Em análise pela administração', estado: 'atual' });
+        etapas.push({ titulo: 'Entrega do objeto', estado: 'pendente' });
+      } else if (r.status === 'REJEITADA') {
+        etapas.push({ titulo: 'Rejeitada', data: r.dataDecisao, estado: 'recusada' });
+      } else {
+        etapas.push({ titulo: 'Aprovada', data: r.dataDecisao, estado: 'feita' });
+        etapas.push(r.devolucao
+          ? { titulo: 'Objeto entregue', data: r.devolucao.dataHora, estado: 'feita' }
+          : { titulo: 'Aguardando retirada', estado: 'atual' });
+      }
+      return etapas.map((etapa) => {
+        const li = document.createElement('li');
+        li.className = `etapa-${etapa.estado}`;
+        const titulo = document.createElement('strong');
+        titulo.textContent = etapa.titulo;
+        li.append(titulo);
+        if (etapa.data) {
+          const data = document.createElement('small');
+          data.textContent = dataHora(etapa.data);
+          li.append(data);
+        }
+        return li;
+      });
+    }
+
+    // As respostas chegam num texto só, uma por linha, como "Pergunta: resposta"
+    function respostas(texto) {
+      return texto.split('\n').filter((linha) => linha.trim()).map((linha) => {
+        const bloco = document.createElement('div');
+        const separador = linha.indexOf(': ');
+        const dt = document.createElement('dt');
+        const dd = document.createElement('dd');
+        if (separador > 0) {
+          dt.textContent = linha.slice(0, separador);
+          dd.textContent = linha.slice(separador + 2);
+        } else {
+          dt.textContent = 'Resposta';
+          dd.textContent = linha;
+        }
+        bloco.append(dt, dd);
+        return bloco;
+      });
+    }
+
     function exibir(r) {
       preencher('numero', r.id);
-      const selo = preencher('selo', ROTULOS[r.status]);
+      const selo = preencher('selo', r.status === 'APROVADA' && r.devolucao ? 'Devolvido' : ROTULOS[r.status]);
       selo.className = `selo selo-${r.status.toLowerCase()}`;
-      const item = preencher('item', `${r.item.titulo} (nº ${r.item.id})`);
-      item.href = `/item.html?id=${r.item.id}`;
-      preencher('reivindicante', r.reivindicante);
-      preencher('dataAbertura', dataHora(r.dataAbertura));
 
-      for (const campo of ['rotulo-decisao', 'dataDecisao']) document.getElementById(campo).hidden = !r.dataDecisao;
-      if (r.dataDecisao) preencher('dataDecisao', dataHora(r.dataDecisao));
-      for (const campo of ['rotulo-motivo', 'motivo']) document.getElementById(campo).hidden = !r.motivoRejeicao;
+      document.getElementById('item-link').href = `/item.html?id=${r.item.id}`;
+      preencher('item', `${r.item.titulo} (nº ${r.item.id})`);
+      // Sem foto: um quadro "Sem foto" no lugar de uma imagem quebrada
+      const foto = document.createElement(r.item.foto ? 'img' : 'div');
+      foto.className = 'item-foto';
+      foto.id = 'item-foto';
+      if (r.item.foto) {
+        foto.src = r.item.foto;
+        foto.alt = '';
+      }
+      document.getElementById('item-foto').replaceWith(foto);
+
+      document.getElementById('linha-do-tempo').replaceChildren(...linhaDoTempo(r));
+      preencher('reivindicante', r.reivindicante);
+      document.getElementById('bloco-motivo').hidden = !r.motivoRejeicao;
       preencher('motivo', r.motivoRejeicao);
-      for (const campo of ['rotulo-devolucao', 'devolucao']) document.getElementById(campo).hidden = !r.devolucao;
+      document.getElementById('bloco-devolucao').hidden = !r.devolucao;
       if (r.devolucao) {
         preencher('devolucao', `${dataHora(r.devolucao.dataHora)} (documento conferido: ${DOCUMENTOS[r.devolucao.tipoDocumento]})`);
       }
 
       const passos = {
-        ABERTA: 'A administração vai analisar suas respostas. Acompanhe a conversa abaixo.',
+        ABERTA: 'A administração vai analisar suas respostas. Acompanhe a conversa ao lado.',
         APROVADA: r.devolucao
           ? 'O objeto já foi entregue a você.'
           : 'Retire o objeto na segurança do campus levando um documento com foto.',
-        REJEITADA: 'Se achar que houve engano, explique na conversa abaixo.',
+        REJEITADA: 'Se achar que houve engano, explique na conversa ao lado.',
       };
       preencher('proximo-passo', souAdmin ? '' : passos[r.status]);
       // RN01: devolução só depois da aprovação, e uma vez
       document.getElementById('secao-devolucao').hidden = !(souAdmin && r.status === 'APROVADA' && !r.devolucao);
-      preencher('respostas', r.respostasValidacao);
+      document.getElementById('respostas').replaceChildren(...respostas(r.respostasValidacao));
 
       document.getElementById('sem-provas').hidden = r.provas.length > 0;
       document.getElementById('provas').replaceChildren(...r.provas.map((prova) => {
         const li = document.createElement('li');
         const link = document.createElement('a');
         link.href = `/api/reivindicacoes/${r.id}/provas/${prova.id}`;
+        link.target = '_blank';
         link.textContent = prova.nomeOriginal;
         li.append(link);
         return li;
@@ -162,10 +270,19 @@
       document.getElementById('detalhes').hidden = false;
     }
 
+    // A conversa se atualiza sozinha; só redesenha quando chega mensagem nova
+    const INTERVALO_CONVERSA = 20000;
+    let ultimaMensagem = null;
+
     async function carregarMensagens() {
       const mensagens = await api(`/reivindicacoes/${id}/mensagens`);
+      const ultima = mensagens.at(-1)?.id ?? 0;
+      if (ultima === ultimaMensagem) return;
+      ultimaMensagem = ultima;
+
       document.getElementById('conversa-vazia').hidden = mensagens.length > 0;
-      document.getElementById('conversa').replaceChildren(...mensagens.map((m) => {
+      const conversa = document.getElementById('conversa');
+      conversa.replaceChildren(...mensagens.map((m) => {
         const div = document.createElement('div');
         div.className = m.minha ? 'mensagem mensagem-minha' : 'mensagem';
         const autor = document.createElement('small');
@@ -173,6 +290,79 @@
         div.append(autor, m.texto);
         return div;
       }));
+      conversa.scrollTop = conversa.scrollHeight; // mostra a mensagem mais nova
+    }
+
+    function atualizarConversaSozinha() {
+      setInterval(() => {
+        // Com a aba escondida não precisa perguntar ao servidor
+        if (document.visibilityState === 'visible') carregarMensagens().catch(() => {});
+      }, INTERVALO_CONVERSA);
+    }
+
+    // Comparar com o anúncio: a administração vê o item em qualquer situação
+    async function mostrarAnuncio(itemId) {
+      const anuncio = await api(`/itens/${itemId}`);
+      preencher('anuncio-descricao', anuncio.descricao);
+      preencher('anuncio-local', anuncio.local);
+      preencher('anuncio-categoria', `${anuncio.categoria} · achado em ${anuncio.dataAchado.split('-').reverse().join('/')}`);
+      document.getElementById('anuncio-fotos').replaceChildren(...anuncio.fotos.map((foto, i) => {
+        const link = document.createElement('a');
+        link.className = 'miniatura';
+        link.href = foto.url;
+        link.target = '_blank';
+        link.setAttribute('aria-label', `Abrir foto ${i + 1} do anúncio`);
+        const img = document.createElement('img');
+        img.src = foto.url;
+        img.alt = '';
+        link.append(img);
+        return link;
+      }));
+      document.getElementById('anuncio').hidden = false;
+    }
+
+    // Outras reivindicações abertas para o mesmo item: aprovar esta rejeita todas elas
+    async function mostrarOutras(r) {
+      const outras = (await api('/reivindicacoes')).filter((o) => o.itemId === r.item.id && o.id !== r.id);
+      document.getElementById('outras').hidden = outras.length === 0;
+      if (outras.length === 0) return;
+      preencher('outras-titulo', outras.length === 1
+        ? 'Há mais 1 reivindicação aberta para este item:'
+        : `Há mais ${outras.length} reivindicações abertas para este item:`);
+      document.getElementById('outras-lista').replaceChildren(...outras.map((o) => {
+        const li = document.createElement('li');
+        const link = document.createElement('a');
+        link.href = `/reivindicacao.html?id=${o.id}`;
+        link.textContent = `nº ${o.id}, de ${o.reivindicante}, aberta em ${dataHora(o.dataAbertura)}`;
+        li.append(link);
+        return li;
+      }));
+    }
+
+    // Respostas prontas da administração
+    const RESPOSTAS_PRONTAS = [
+      ['Pode retirar', 'Sua reivindicação foi aprovada. Pode retirar o objeto na segurança do campus levando um documento com foto.'],
+      ['Pedir foto', 'Você tem alguma foto antiga em que apareça com o objeto? Se tiver, envie por aqui.'],
+      ['Pedir detalhe', 'Pode descrever algum detalhe que só o dono saberia, como um arranhão, adesivo ou o que havia dentro?'],
+      ['Nota fiscal', 'Se tiver a nota fiscal ou o comprovante de compra, ajuda a confirmar que o objeto é seu.'],
+    ];
+
+    function prepararRespostasProntas() {
+      const caixa = document.getElementById('respostas-prontas');
+      const texto = document.getElementById('texto');
+      caixa.replaceChildren(...RESPOSTAS_PRONTAS.map(([rotulo, mensagem]) => {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip';
+        chip.textContent = rotulo;
+        chip.title = mensagem;
+        chip.addEventListener('click', () => {
+          texto.value = mensagem;
+          texto.focus();
+        });
+        return chip;
+      }));
+      caixa.hidden = false;
     }
 
     async function carregar() {
@@ -184,12 +374,22 @@
         document.getElementById('voltar').href = '/admin.html';
         preencher('com-quem', 'pessoa que reivindicou');
       }
+      let r;
       try {
-        exibir(await api(`/reivindicacoes/${encodeURIComponent(id)}`));
+        r = await api(`/reivindicacoes/${encodeURIComponent(id)}`);
+        exibir(r);
         document.getElementById('secao-conversa').hidden = false;
         await carregarMensagens();
+        atualizarConversaSozinha();
       } catch (erro) {
         mostrar('aviso', erro.message, true);
+        return;
+      }
+      if (souAdmin) {
+        prepararRespostasProntas();
+        // Extras para decidir: se falharem, a página continua funcionando sem eles
+        mostrarAnuncio(r.item.id).catch(() => {});
+        if (r.status === 'ABERTA') mostrarOutras(r).catch(() => {});
       }
     }
 
@@ -202,6 +402,7 @@
         document.getElementById('decisao').hidden = false; // mantém o aviso visível
         document.getElementById('aprovar').hidden = true;
         document.getElementById('form-rejeicao').hidden = true;
+        document.getElementById('outras').hidden = true;
       } catch (erro) {
         mostrar('aviso-decisao', erro.message, true);
       }
@@ -248,6 +449,14 @@
         await carregarMensagens();
       } catch (erro) {
         mostrar('aviso-mensagem', erro.message, true);
+      }
+    });
+
+    // Enter envia a mensagem; Shift+Enter quebra a linha
+    document.getElementById('texto').addEventListener('keydown', (evento) => {
+      if (evento.key === 'Enter' && !evento.shiftKey) {
+        evento.preventDefault();
+        document.getElementById('form-mensagem').requestSubmit();
       }
     });
 
