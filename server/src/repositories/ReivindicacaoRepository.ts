@@ -35,6 +35,8 @@ export interface ReivindicacaoResumo {
   itemId: number;
   itemTitulo: string;
   itemStatus: StatusItem;
+  /** Primeira foto do item, ou null se ele não tiver foto. */
+  itemFoto: string | null;
   reivindicante: string;
 }
 
@@ -58,7 +60,8 @@ export class ReivindicacaoRepository extends Repositorio {
   private static readonly SELECT_RESUMO = `
     SELECT r.id, r.status, r.data_abertura AS dataAbertura, r.data_decisao AS dataDecisao,
            r.motivo_rejeicao AS motivoRejeicao, i.id AS itemId, i.titulo AS itemTitulo,
-           i.status AS itemStatus, u.nome AS reivindicante
+           i.status AS itemStatus, u.nome AS reivindicante,
+           (SELECT '/uploads/' || f.caminho FROM foto f WHERE f.item_id = i.id ORDER BY f.id LIMIT 1) AS itemFoto
     FROM reivindicacao r
     JOIN item i ON i.id = r.item_id
     JOIN usuario u ON u.id = r.reivindicante_id`;

@@ -7,7 +7,7 @@ import { StatusReivindicacao } from "../../src/module/StatusReivindicacao";
 import { TipoDocumento } from "../../src/module/TipoDocumento";
 import { ReivindicacaoService } from "../../src/services/ReivindicacaoService";
 import { DevolucaoService } from "../../src/services/DevolucaoService";
-import { contar, criarItem, criarUsuario, prepararBanco, statusDoItem } from "../fabrica";
+import { contar, criarItem, criarUsuario, prepararBanco, sql, statusDoItem } from "../fabrica";
 import { erroDeNegocio } from "../verificar";
 
 prepararBanco();
@@ -113,6 +113,15 @@ describe("detalhar e listas (RF04.7, RF04.4)", () => {
     const r2 = servico.abrir(item(), "respostas", [], quem);
     servico.abrir(item(), "respostas", [], aluno());
     assert.deepEqual(servico.listarMinhas(quem.id).map((r) => r.id), [r2.getId(), r1.getId()]);
+  });
+
+  test("minhas: traz a primeira foto do item, ou null", () => {
+    const quem = aluno();
+    const comFoto = item();
+    sql("INSERT INTO foto (caminho, item_id) VALUES ('a.png', ?), ('b.png', ?)", comFoto, comFoto);
+    servico.abrir(comFoto, "respostas", [], quem);
+    servico.abrir(item(), "respostas", [], quem);
+    assert.deepEqual(servico.listarMinhas(quem.id).map((r) => r.itemFoto), [null, "/uploads/a.png"]);
   });
 
   test("fila do administrador: só abertas, mais antigas primeiro", () => {

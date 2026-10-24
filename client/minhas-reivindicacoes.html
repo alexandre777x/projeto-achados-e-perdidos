@@ -23,11 +23,22 @@
   </header>
 
   <main>
-    <h1>Minhas reivindicações</h1>
-    <section class="cartao">
-      <ul class="lista-simples" id="lista"></ul>
-      <p class="suave" id="vazio" hidden>Você ainda não reivindicou nenhum item. Procure o seu em <a href="/itens.html">Itens encontrados</a>.</p>
-      <p id="aviso" role="status"></p>
+    <div class="cabecalho-pagina">
+      <h1>Minhas reivindicações</h1>
+      <p class="suave">Acompanhe os pedidos que você fez para recuperar seus objetos.</p>
+    </div>
+
+    <!-- Filtro por situação, com a contagem de cada uma -->
+    <div class="chips" id="chips" role="group" aria-label="Filtrar por situação" hidden></div>
+
+    <p id="aviso" role="status"></p>
+    <ul class="lista-reivindicacoes" id="lista"></ul>
+
+    <section class="cartao estado-vazio" id="vazio" hidden>
+      <span class="estado-vazio-icone" aria-hidden="true"></span>
+      <h2>Você ainda não reivindicou nenhum item</h2>
+      <p class="suave">Encontrou o seu objeto na lista? Abra o item e clique em reivindicar para pedir a devolução.</p>
+      <a class="botao" href="/itens.html">Procurar itens encontrados</a>
     </section>
   </main>
 
@@ -36,37 +47,114 @@
   <script>
     // RF04.7: estado de cada reivindicação (aberta, aprovada, rejeitada)
     const ROTULOS = { ABERTA: 'Aberta', APROVADA: 'Aprovada', REJEITADA: 'Rejeitada' };
+    const FILTROS = [
+      ['', 'Todas'],
+      ['ABERTA', 'Abertas'],
+      ['APROVADA', 'Aprovadas'],
+      ['REJEITADA', 'Rejeitadas'],
+    ];
+    const lista = document.getElementById('lista');
+    const chips = document.getElementById('chips');
+    let todas = [];
+    let filtro = '';
 
     function dataHora(texto) {
       return new Date(texto.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
     }
 
+    // O que a pessoa precisa saber ou fazer agora, conforme a situação
+    function proximoPasso(r) {
+      if (r.status === 'ABERTA') return 'A administração está analisando. Acompanhe e responda pelas mensagens.';
+      if (r.status === 'APROVADA') {
+        return r.itemStatus === 'DEVOLVIDO'
+          ? 'Item entregue a você. Que bom que deu certo!'
+          : 'Retire o objeto na segurança do campus levando um documento com foto.';
+      }
+      return null; // rejeitada: o motivo aparece no lugar
+    }
+
+    function cartao(r) {
+      const li = document.createElement('li');
+      const link = document.createElement('a');
+      link.className = `reivindicacao reivindicacao-${r.status.toLowerCase()}`;
+      link.href = `/reivindicacao.html?id=${r.id}`;
+
+      // Sem foto: um quadro "Sem foto" no lugar de uma imagem quebrada
+      const foto = document.createElement(r.itemFoto ? 'img' : 'div');
+      foto.className = 'item-foto';
+      if (r.itemFoto) {
+        foto.src = r.itemFoto;
+        foto.alt = '';
+        foto.loading = 'lazy';
+      }
+
+      const corpo = document.createElement('div');
+      corpo.className = 'reivindicacao-corpo';
+      const topo = document.createElement('div');
+      topo.className = 'reivindicacao-topo';
+      const titulo = document.createElement('h2');
+      titulo.textContent = r.itemTitulo;
+      const selo = document.createElement('span');
+      selo.className = `selo selo-${r.status.toLowerCase()}`;
+      selo.textContent = r.status === 'APROVADA' && r.itemStatus === 'DEVOLVIDO' ? 'Devolvido' : ROTULOS[r.status];
+      topo.append(titulo, selo);
+
+      const datas = document.createElement('p');
+      datas.className = 'suave reivindicacao-datas';
+      datas.textContent = `Pedido nº ${r.id} · aberto em ${dataHora(r.dataAbertura)}`
+        + (r.dataDecisao ? ` · decidido em ${dataHora(r.dataDecisao)}` : '');
+
+      const passo = document.createElement('p');
+      if (r.motivoRejeicao) {
+        passo.className = 'reivindicacao-passo passo-motivo';
+        passo.textContent = `Motivo: ${r.motivoRejeicao}`;
+      } else {
+        passo.className = 'reivindicacao-passo';
+        passo.textContent = proximoPasso(r);
+      }
+
+      const acao = document.createElement('span');
+      acao.className = 'reivindicacao-acao';
+      acao.textContent = r.status === 'ABERTA' ? 'Ver conversa' : 'Ver detalhes';
+
+      corpo.append(topo, datas, passo);
+      link.append(foto, corpo, acao);
+      li.append(link);
+      return li;
+    }
+
+    function mostrarLista() {
+      const visiveis = todas.filter((r) => !filtro || r.status === filtro);
+      lista.replaceChildren(...visiveis.map(cartao));
+      for (const chip of chips.children) chip.setAttribute('aria-pressed', String(chip.value === filtro));
+      const aviso = document.getElementById('aviso');
+      aviso.className = 'suave';
+      aviso.textContent = visiveis.length === 0 && todas.length > 0 ? 'Nenhuma reivindicação nesta situação.' : '';
+    }
+
+    function montarChips() {
+      chips.replaceChildren(...FILTROS.map(([status, rotulo]) => {
+        const quantos = todas.filter((r) => !status || r.status === status).length;
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip';
+        chip.value = status;
+        chip.textContent = `${rotulo} (${quantos})`;
+        chip.addEventListener('click', () => {
+          filtro = status;
+          mostrarLista();
+        });
+        return chip;
+      }));
+      chips.hidden = todas.length === 0;
+    }
+
     api('/reivindicacoes/minhas')
       .then((reivindicacoes) => {
-        document.getElementById('vazio').hidden = reivindicacoes.length > 0;
-        document.getElementById('lista').replaceChildren(...reivindicacoes.map((r) => {
-          const li = document.createElement('li');
-          const texto = document.createElement('div');
-          const link = document.createElement('a');
-          link.href = `/reivindicacao.html?id=${r.id}`;
-          link.textContent = r.itemTitulo;
-          const data = document.createElement('small');
-          data.className = 'suave';
-          data.textContent = ` · aberta em ${dataHora(r.dataAbertura)}`;
-          texto.append(link, data);
-          if (r.motivoRejeicao) {
-            const motivo = document.createElement('p');
-            motivo.className = 'suave';
-            motivo.style.margin = '4px 0 0';
-            motivo.textContent = `Motivo: ${r.motivoRejeicao}`;
-            texto.append(motivo);
-          }
-          const selo = document.createElement('span');
-          selo.className = `selo selo-${r.status.toLowerCase()}`;
-          selo.textContent = ROTULOS[r.status];
-          li.append(texto, selo);
-          return li;
-        }));
+        todas = reivindicacoes;
+        document.getElementById('vazio').hidden = todas.length > 0;
+        montarChips();
+        mostrarLista();
       })
       .catch((erro) => {
         const aviso = document.getElementById('aviso');
