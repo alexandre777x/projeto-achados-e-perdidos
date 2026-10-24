@@ -22,48 +22,79 @@
     </nav>
   </header>
 
-  <main>
-    <p><a href="/itens.html">← Voltar para a busca</a></p>
+  <main class="main-largo">
+    <a class="voltar" href="/itens.html">Voltar para a busca</a>
     <p id="aviso" role="status"></p>
 
-    <article class="cartao" id="detalhes" hidden>
-      <h1 id="titulo"></h1>
-      <span id="selo" class="selo"></span>
-      <div class="galeria" id="galeria"></div>
-      <p id="descricao" class="texto-livre"></p>
-      <dl class="dados">
-        <dt>Categoria</dt><dd id="categoria"></dd>
-        <dt>Encontrado em</dt><dd id="local"></dd>
-        <dt>Data do achado</dt><dd id="dataAchado"></dd>
-        <dt>Número do item</dt><dd id="numero"></dd>
-      </dl>
+    <!-- Fotos à esquerda e informações à direita; no celular, uma embaixo da outra -->
+    <article class="layout-item" id="detalhes" hidden>
+      <div class="cartao galeria-item">
+        <div id="galeria"></div>
+      </div>
+
+      <div class="cartao info-item">
+        <span id="selo" class="selo"></span>
+        <h1 id="titulo"></h1>
+        <div class="etiquetas">
+          <span class="etiqueta" id="categoria"></span>
+        </div>
+
+        <dl class="dados-item">
+          <div>
+            <dt>Onde foi encontrado</dt>
+            <dd id="local"></dd>
+          </div>
+          <div>
+            <dt>Data do achado</dt>
+            <dd id="dataAchado"></dd>
+          </div>
+          <div>
+            <dt>Número do item</dt>
+            <dd id="numero"></dd>
+          </div>
+        </dl>
+
+        <h2>Descrição</h2>
+        <p id="descricao" class="texto-livre"></p>
+
+        <a class="botao botao-largo" id="ir-reivindicar" href="#reivindicar" hidden>Este item é meu</a>
+      </div>
     </article>
 
     <!-- RF04.1 e RF04.2: reivindicar o item -->
-    <section class="cartao" id="reivindicar" hidden>
+    <section class="cartao secao-admin" id="reivindicar" hidden>
       <h2>Este item é seu?</h2>
       <p id="reivindicar-situacao"></p>
 
       <form id="form-reivindicacao" novalidate hidden>
         <p class="suave">Responda o que puder sobre detalhes que <strong>não aparecem no anúncio</strong>.
           A administração compara com o objeto antes de aprovar.</p>
-        <div id="perguntas"></div>
+        <div class="perguntas" id="perguntas"></div>
 
-        <label for="provas">Provas de posse (opcional: nota fiscal, foto antiga com o objeto...)</label>
-        <input type="file" id="provas" name="provas" accept="image/jpeg,image/png,application/pdf" multiple>
-        <p class="suave">Até 3 arquivos JPG, PNG ou PDF de até 5 MB. Só você e a administração conseguem abrir.</p>
+        <label for="provas">Provas de posse (opcional)</label>
+        <!-- O campo de arquivo cobre a área inteira: clicar ou arrastar funciona -->
+        <div class="area-fotos">
+          <input type="file" id="provas" name="provas" accept="image/jpeg,image/png,application/pdf" multiple
+                 aria-describedby="provas-dica">
+          <span class="area-fotos-icone" aria-hidden="true"></span>
+          <strong>Nota fiscal, foto antiga com o objeto...</strong>
+          <span class="suave" id="provas-dica">Até 3 arquivos JPG, PNG ou PDF de até 5 MB. Só você e a administração conseguem abrir.</span>
+        </div>
+        <ul class="lista-arquivos" id="lista-provas"></ul>
 
         <p id="aviso-reivindicacao" role="alert"></p>
-        <button type="submit">Enviar reivindicação</button>
+        <button type="submit" class="botao-largo">Enviar reivindicação</button>
       </form>
     </section>
 
     <!-- RF02.6: só aparece para a administração -->
-    <section class="cartao" id="administracao" hidden>
+    <section class="cartao secao-admin" id="administracao" hidden>
       <h2>Administração</h2>
-      <button type="button" id="confirmar" hidden>Confirmar recebimento</button>
-      <button type="button" id="abrir-edicao">Editar</button>
-      <button type="button" class="botao-claro" id="excluir">Excluir</button>
+      <div class="barra-botoes">
+        <button type="button" id="confirmar" hidden>Confirmar recebimento</button>
+        <button type="button" class="botao-claro" id="abrir-edicao">Editar</button>
+        <button type="button" class="botao-perigo" id="excluir">Excluir</button>
+      </div>
 
       <form id="form-edicao" novalidate hidden>
         <label for="ed-titulo">Título</label>
@@ -82,8 +113,10 @@
         </div>
         <label for="ed-local">Onde foi encontrado</label>
         <input type="text" id="ed-local" name="local" required minlength="3" maxlength="150">
-        <button type="submit">Salvar alterações</button>
-        <button type="button" class="botao-claro" id="cancelar-edicao">Cancelar</button>
+        <div class="barra-botoes">
+          <button type="submit">Salvar alterações</button>
+          <button type="button" class="botao-claro" id="cancelar-edicao">Cancelar</button>
+        </div>
       </form>
       <p id="aviso-admin" role="status"></p>
     </section>
@@ -107,12 +140,56 @@
 
     function mostrar(elemento, texto, ehErro) {
       elemento.textContent = texto;
-      elemento.className = ehErro ? 'erro' : '';
+      elemento.className = !texto ? '' : ehErro ? 'erro' : 'aviso-sucesso';
     }
 
     function hoje() {
       const agora = new Date();
       return new Date(agora.getTime() - agora.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+    }
+
+    // Foto grande (abre em tamanho real numa nova aba) e miniaturas para trocar entre elas
+    function montarGaleria() {
+      const galeria = document.getElementById('galeria');
+      if (item.fotos.length === 0) {
+        const vazio = document.createElement('div');
+        vazio.className = 'item-foto foto-principal';
+        galeria.replaceChildren(vazio);
+        return;
+      }
+
+      const link = document.createElement('a');
+      link.target = '_blank';
+      const principal = document.createElement('img');
+      principal.className = 'item-foto foto-principal';
+      link.append(principal);
+
+      const miniaturas = document.createElement('div');
+      miniaturas.className = 'miniaturas';
+
+      function escolher(i) {
+        link.href = item.fotos[i].url;
+        principal.src = item.fotos[i].url;
+        principal.alt = `Foto ${i + 1} de ${item.titulo}`;
+        for (const [j, botao] of [...miniaturas.children].entries()) botao.setAttribute('aria-pressed', String(i === j));
+      }
+
+      if (item.fotos.length > 1) {
+        miniaturas.append(...item.fotos.map((foto, i) => {
+          const botao = document.createElement('button');
+          botao.type = 'button';
+          botao.className = 'miniatura';
+          botao.setAttribute('aria-label', `Ver foto ${i + 1}`);
+          const img = document.createElement('img');
+          img.src = foto.url;
+          img.alt = '';
+          botao.append(img);
+          botao.addEventListener('click', () => escolher(i));
+          return botao;
+        }));
+      }
+      galeria.replaceChildren(link, miniaturas);
+      escolher(0);
     }
 
     function exibir(dados) {
@@ -126,18 +203,8 @@
       document.getElementById('categoria').textContent = item.categoria;
       document.getElementById('local').textContent = item.local;
       document.getElementById('dataAchado').textContent = item.dataAchado.split('-').reverse().join('/');
-      document.getElementById('numero').textContent = item.id;
-      document.getElementById('galeria').replaceChildren(...item.fotos.map((foto, i) => {
-        const link = document.createElement('a');
-        link.href = foto.url;
-        link.target = '_blank';
-        const img = document.createElement('img');
-        img.className = 'item-foto';
-        img.src = foto.url;
-        img.alt = `Foto ${i + 1} de ${item.titulo}`;
-        link.append(img);
-        return link;
-      }));
+      document.getElementById('numero').textContent = `nº ${item.id}`;
+      montarGaleria();
       document.getElementById('confirmar').hidden = item.status !== 'AGUARDANDO_RECEBIMENTO';
       document.getElementById('detalhes').hidden = false;
     }
@@ -176,6 +243,7 @@
       const secao = document.getElementById('reivindicar');
       const situacao = document.getElementById('reivindicar-situacao');
       secao.hidden = false;
+      document.getElementById('ir-reivindicar').hidden = false;
 
       if (!usuario) {
         situacao.textContent = 'Entre na sua conta para pedir a devolução. ';
@@ -190,6 +258,10 @@
       const minhas = await api('/reivindicacoes/minhas').catch(() => []);
       const atual = minhas.find((r) => r.itemId === item.id && r.status !== 'REJEITADA');
       if (atual) {
+        const botaoTopo = document.getElementById('ir-reivindicar');
+        botaoTopo.textContent = 'Ver minha reivindicação';
+        botaoTopo.href = `/reivindicacao.html?id=${atual.id}`;
+        situacao.className = 'aviso-sucesso';
         situacao.textContent = atual.status === 'APROVADA'
           ? 'Sua reivindicação foi aprovada. '
           : 'Você já reivindicou este item. ';
@@ -201,7 +273,8 @@
       }
 
       situacao.textContent = '';
-      document.getElementById('perguntas').replaceChildren(...PERGUNTAS.flatMap((pergunta, i) => {
+      document.getElementById('perguntas').replaceChildren(...PERGUNTAS.map((pergunta, i) => {
+        const bloco = document.createElement('div');
         const label = document.createElement('label');
         label.htmlFor = `pergunta-${i}`;
         label.textContent = pergunta;
@@ -210,10 +283,20 @@
         campo.rows = 2;
         campo.maxLength = 350;
         campo.dataset.pergunta = pergunta;
-        return [label, campo];
+        bloco.append(label, campo);
+        return bloco;
       }));
       formReivindicacao.hidden = false;
     }
+
+    // Nomes dos arquivos de prova escolhidos
+    formReivindicacao.provas.addEventListener('change', () => {
+      document.getElementById('lista-provas').replaceChildren(...[...formReivindicacao.provas.files].map((prova) => {
+        const li = document.createElement('li');
+        li.textContent = prova.name;
+        return li;
+      }));
+    });
 
     formReivindicacao.addEventListener('submit', async (evento) => {
       evento.preventDefault();
@@ -240,7 +323,7 @@
       dados.set('respostasValidacao', respostas);
       for (const prova of provas) dados.append('provas', prova);
 
-      const botao = formReivindicacao.querySelector('button');
+      const botao = formReivindicacao.querySelector('button[type="submit"]');
       botao.disabled = true;
       botao.textContent = 'Enviando...';
       try {
