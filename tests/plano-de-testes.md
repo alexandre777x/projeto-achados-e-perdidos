@@ -37,7 +37,7 @@ Testes que olham o código: cobrem os desvios (if/else) das regras de negócio R
 Na pasta `server/`:
 
 ```bash
-npm test                # roda os 271 testes (cerca de 4 segundos)
+npm test                # roda os 277 testes (cerca de 4 segundos)
 npm run test:cobertura  # roda e mostra a cobertura de linhas e de desvios por arquivo
 ```
 
@@ -55,6 +55,7 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 | `test/services/ItemService.test.ts` | Service + banco | Registro, manutenção (RF02.6), busca com todos os filtros (RF03) e detalhe por perfil |
 | `test/services/ReivindicacaoService.test.ts` | Service + banco | Abrir, rejeitar com e sem outras abertas, quem pode decidir, mensagens, não lidas, e-mail da decisão e provas |
 | `test/services/UsuarioService.test.ts` | Service + banco | Gestão de contas: busca, mudar perfil, desativar e as travas (própria conta e último administrador) |
+| `test/scripts/criarAdmin.test.ts` | Script + banco | `npm run criar-admin`: cria administrador novo, promove conta existente (mantendo a senha), reativa conta desativada e não muda nada com "n" |
 | `test/services/autenticacao.test.ts` | Service + banco | Cadastro (RF01.1, RF01.2, RF01.5), login (CT02, CT03) e recuperação de senha (CT12 a CT14) |
 | `test/database/migracao.test.ts` | Banco | Migração da MR01 (local em texto livre): monta um banco no formato antigo e confere que nenhum dado se perde e que as ligações entre tabelas continuam valendo |
 | `test/http.test.ts` | API inteira | Servidor de verdade: login obrigatório no site inteiro (CT19), middlewares de login e perfil (CT11), upload (CT04, CT15, CT16), erros 400/404/500 e o fluxo completo até o CSV |
@@ -71,7 +72,7 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 
 ### Resultado de 23/10/2026
 
-**271 testes, 271 aprovados** (24/10/2026, com o filtro de local, a ordenação da busca, a foto do item nas reivindicações, o contador de mensagens não lidas, o e-mail da decisão, a busca sem acento, o "Carregar mais", os itens parados e a gestão de usuários).
+**277 testes, 277 aprovados** (24/10/2026, com o filtro de local, a ordenação da busca, a foto do item nas reivindicações, o contador de mensagens não lidas, o e-mail da decisão, a busca sem acento, o "Carregar mais", os itens parados, a gestão de usuários e o criar-admin que promove contas).
 
 | Cobertura (`npm run test:cobertura`) | Linhas | Desvios (branches) | Funções |
 | --- | --- | --- | --- |

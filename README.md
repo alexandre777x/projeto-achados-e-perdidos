@@ -2,7 +2,7 @@
 
 Sistema web de achados e perdidos universitário. Mini-projeto de Engenharia de Software (processo Cascata).
 
-Equipe: Antonio Alexandre, Mateus Augusto e João Victor.
+Equipe: Antonio Alexandre, Mateus Augusto, João Victor e Heitor Cirqueira.
 
 ## Tecnologias
 
@@ -38,6 +38,7 @@ Abra http://localhost:3000: o site abre na tela de login. O site inteiro exige c
 - O banco é criado sozinho na primeira execução, a partir de `server/database/schema.sql` e `seed.sql`.
   Se o `schema.sql` mudar, apague `server/data/campuslost.db` para o banco ser recriado (os dados de teste se perdem).
 - O primeiro administrador precisa ser criado pelo `npm run criar-admin`, porque o RF01.5 proíbe virar administrador pelo cadastro.
+  Se o e-mail já tiver conta (criada pelo site como aluno ou professor), o comando pergunta se ela deve virar administradora, mantendo a senha.
   Os seguintes são criados pelo site: **Administração → Usuários**, onde um administrador cria contas, dá o perfil de administrador a quem já tem conta e desativa contas.
 - Sem e-mail configurado no `.env`, os e-mails (link de recuperação de senha e aviso de reivindicação aprovada ou rejeitada) aparecem no terminal do servidor.
 
@@ -46,7 +47,7 @@ Abra http://localhost:3000: o site abre na tela de login. O site inteiro exige c
 | `npm run dev` | Sobe o servidor e reinicia sozinho a cada alteração |
 | `npm run build` | Confere os tipos e gera o JavaScript em `server/dist/` |
 | `npm start` | Roda a versão gerada pelo build |
-| `npm run criar-admin` | Cria uma conta de administrador |
+| `npm run criar-admin` | Cria uma conta de administrador, ou transforma em administradora uma conta que já existe |
 | `npm test` | Roda os testes automáticos (usam um banco temporário, nunca o seu) |
 | `npm run test:cobertura` | Roda os testes e mostra quanto do código eles cobrem |
 
