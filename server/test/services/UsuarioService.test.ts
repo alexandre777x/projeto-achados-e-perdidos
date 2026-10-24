@@ -3,7 +3,8 @@ import { describe, test } from "node:test";
 import assert from "node:assert/strict";
 import { PerfilUsuario } from "../../src/module/PerfilUsuario";
 import { UsuarioService } from "../../src/services/UsuarioService";
-import { criarUsuario, prepararBanco, sql } from "../fabrica";
+import { SENHA, contar, criarUsuario, prepararBanco, sql } from "../fabrica";
+import { UsuarioRepository } from "../../src/repositories/UsuarioRepository";
 import { erroDeNegocio } from "../verificar";
 
 prepararBanco();
@@ -77,5 +78,42 @@ describe("UsuarioService.mudarAtivo", () => {
     const aluno = criarUsuario();
     assert.throws(() => servico.mudarAtivo(aluno.id, "false", admin.id), erroDeNegocio(400));
     assert.throws(() => servico.mudarAtivo(admin.id, false, admin.id), erroDeNegocio(409, "própria conta"));
+  });
+});
+
+describe("Meu perfil: nome e senha da própria conta", () => {
+  test("troca o nome, sem espaços nas pontas", () => {
+    const aluno = criarUsuario();
+    assert.equal(servico.atualizarMeuNome(aluno.id, "  Maria Clara  ").getNome(), "Maria Clara");
+  });
+
+  test("nome curto ou longo demais é recusado", () => {
+    const aluno = criarUsuario();
+    assert.throws(() => servico.atualizarMeuNome(aluno.id, "Al"), erroDeNegocio(400, "nome"));
+    assert.throws(() => servico.atualizarMeuNome(aluno.id, "a".repeat(101)), erroDeNegocio(400, "nome"));
+    assert.throws(() => servico.atualizarMeuNome(99999, "Nome Válido"), erroDeNegocio(404));
+  });
+
+  test("troca a senha conferindo a atual", async () => {
+    const aluno = criarUsuario();
+    await servico.trocarMinhaSenha(aluno.id, SENHA, "senhanova123");
+    const conta = new UsuarioRepository().buscarPorId(aluno.id);
+    assert.ok(await conta?.senhaConfere("senhanova123"));
+    assert.equal(await conta?.senhaConfere(SENHA), false);
+  });
+
+  test("senha atual errada, senha nova curta ou igual à atual: recusa e não troca", async () => {
+    const aluno = criarUsuario();
+    await assert.rejects(servico.trocarMinhaSenha(aluno.id, "errada123", "senhanova123"), erroDeNegocio(400, "atual"));
+    await assert.rejects(servico.trocarMinhaSenha(aluno.id, SENHA, "curta"), erroDeNegocio(400, "8"));
+    await assert.rejects(servico.trocarMinhaSenha(aluno.id, SENHA, SENHA), erroDeNegocio(400, "diferente"));
+    assert.ok(await new UsuarioRepository().buscarPorId(aluno.id)?.senhaConfere(SENHA), "a senha continua a mesma");
+  });
+
+  test("a senha nova invalida links de recuperação pendentes", async () => {
+    const aluno = criarUsuario();
+    sql("INSERT INTO recuperacao_senha (token_hash, usuario_id, expira_em) VALUES ('abc', ?, datetime('now', '+1 hour'))", aluno.id);
+    await servico.trocarMinhaSenha(aluno.id, SENHA, "senhanova123");
+    assert.equal(contar("SELECT COUNT(*) AS n FROM recuperacao_senha WHERE usuario_id = ? AND usado = 0", aluno.id), 0);
   });
 });

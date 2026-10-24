@@ -116,10 +116,15 @@ header nav {
   gap: 4px 8px;
 }
 
-/* As duas margens automáticas centralizam os links e empurram o "Sair" para a direita */
+/* As duas margens automáticas centralizam os links e empurram o perfil e o "Sair" para a direita */
 header nav a:first-child,
+header nav #link-perfil,
 header nav #sair {
   margin-left: auto;
+}
+
+header nav #link-perfil + #sair {
+  margin-left: 0;
 }
 
 header nav a {
@@ -135,8 +140,8 @@ header nav a[aria-current="page"] {
   background: rgba(255, 255, 255, 0.16);
 }
 
-/* Sair: botão de contorno com ícone de pessoa e o primeiro nome */
-header nav #sair {
+/* Meu perfil: botão de contorno com ícone de pessoa e o primeiro nome */
+header nav #link-perfil {
   display: inline-flex;
   align-items: center;
   gap: 8px;
@@ -144,7 +149,7 @@ header nav #sair {
   border: 1.5px solid rgba(255, 255, 255, 0.55);
 }
 
-header nav #sair::before {
+header nav #link-perfil::before {
   content: "";
   width: 24px;
   height: 24px;
@@ -154,9 +159,35 @@ header nav #sair::before {
     center / 15px no-repeat;
 }
 
-header nav #sair:hover {
+header nav #link-perfil:hover,
+header nav #link-perfil[aria-current="page"] {
   background: #fff;
   color: var(--roxo);
+}
+
+/* Com o fundo branco, o círculo do ícone fica roxo para o ícone continuar aparecendo */
+header nav #link-perfil:hover::before,
+header nav #link-perfil[aria-current="page"]::before {
+  background-color: var(--roxo);
+}
+
+/* Sair: link discreto com ícone de saída */
+header nav #sair {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  opacity: 0.9;
+}
+
+header nav #sair::before {
+  content: "";
+  width: 16px;
+  height: 16px;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23fff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M15 4h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2h-3'/%3E%3Cpath d='M10 17l-5-5 5-5'/%3E%3Cpath d='M5 12h11'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+header nav #sair:hover {
+  opacity: 1;
 }
 
 @media (max-width: 760px) {
@@ -2565,4 +2596,73 @@ img.foto-principal {
   .info-item .progresso-titulo {
     font-size: 0.76rem;
   }
+}
+
+/* ==========================================================================
+   Meu perfil (perfil.html)
+   ========================================================================== */
+.layout-perfil {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 760px) {
+  .layout-perfil {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.layout-perfil .secao-admin {
+  margin: 0;
+}
+
+.layout-perfil .secao-admin > h2 {
+  margin-bottom: 4px;
+}
+
+.layout-perfil form > label:first-of-type {
+  margin-top: 16px;
+}
+
+/* Círculo com as iniciais, nome, e-mail e perfil */
+.cartao-perfil {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.cartao-perfil h2 {
+  margin: 0;
+  font-size: 1.25rem;
+  overflow-wrap: anywhere;
+}
+
+.cartao-perfil p {
+  margin: 2px 0 6px;
+  overflow-wrap: anywhere;
+}
+
+.avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  font-family: var(--fonte-titulo);
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #fff;
+  background: linear-gradient(135deg, var(--roxo) 0%, #b23fcf 60%, var(--magenta) 100%);
+  box-shadow: 0 6px 16px rgba(92, 0, 196, 0.25);
+}
+
+#desde {
+  margin-top: 14px;
+}
+
+.atalhos-perfil {
+  margin-top: 20px;
 }

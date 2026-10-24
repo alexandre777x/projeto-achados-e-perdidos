@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Meu perfil – CampusLost</title>
+  <link rel="icon" href="/img/undb.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <a class="marca" href="/">CampusLost</a>
+    <nav>
+      <a href="/itens.html">Itens encontrados</a>
+      <a href="/novo-item.html">Registrar item</a>
+      <a href="/minhas-reivindicacoes.html">Minhas reivindicações</a>
+      <a href="/admin.html">Administração</a>
+      <a href="/login.html" id="sair">Sair</a>
+    </nav>
+  </header>
+
+  <main>
+    <div class="cabecalho-pagina">
+      <h1>Meu perfil</h1>
+      <p class="suave">Seus dados e a senha da sua conta.</p>
+    </div>
+    <p id="aviso" role="status"></p>
+
+    <div class="layout-perfil" id="conteudo" hidden>
+      <section class="cartao secao-admin">
+        <div class="cartao-perfil">
+          <span class="avatar" id="avatar" aria-hidden="true"></span>
+          <div>
+            <h2 id="nome-atual"></h2>
+            <p class="suave" id="email"></p>
+            <span class="selo" id="perfil"></span>
+          </div>
+        </div>
+        <p class="suave dica-campo" id="desde"></p>
+
+        <form id="form-nome" novalidate>
+          <label for="nome">Nome completo</label>
+          <input type="text" id="nome" name="nome" required minlength="3" maxlength="100" autocomplete="name">
+          <p class="suave dica-campo">O e-mail identifica a sua conta e não pode ser trocado.</p>
+          <button type="submit">Salvar nome</button>
+          <p id="aviso-nome" role="status"></p>
+        </form>
+      </section>
+
+      <section class="cartao secao-admin">
+        <h2>Trocar senha</h2>
+        <form id="form-senha" novalidate>
+          <label for="senha-atual">Senha atual</label>
+          <input type="password" id="senha-atual" name="senhaAtual" required autocomplete="current-password">
+          <label for="senha-nova">Senha nova</label>
+          <input type="password" id="senha-nova" name="novaSenha" required minlength="8" autocomplete="new-password">
+          <label for="senha-confirmacao">Repita a senha nova</label>
+          <input type="password" id="senha-confirmacao" required minlength="8" autocomplete="new-password">
+          <p class="suave dica-campo">Pelo menos 8 caracteres. Esqueceu a senha atual? Saia e use "Perdeu a senha?" na tela de login.</p>
+          <button type="submit">Trocar senha</button>
+          <p id="aviso-senha" role="status"></p>
+        </form>
+      </section>
+    </div>
+
+    <!-- Atalhos para o que a pessoa faz no site -->
+    <div class="indicadores atalhos-perfil" id="atalhos" hidden>
+      <a class="indicador indicador-roxo" href="/minhas-reivindicacoes.html">
+        <span class="indicador-numero" id="n-reivindicacoes">–</span>
+        <span>Reivindicações feitas</span>
+      </a>
+      <a class="indicador indicador-amarelo" href="/minhas-reivindicacoes.html">
+        <span class="indicador-numero" id="n-andamento">–</span>
+        <span>Em andamento</span>
+      </a>
+      <a class="indicador indicador-verde" href="/novo-item.html">
+        <span class="indicador-numero">+</span>
+        <span>Registrar um item encontrado</span>
+      </a>
+    </div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/menu.js"></script>
+  <script>
+    const PERFIS = { ALUNO: 'Aluno', PROFESSOR: 'Professor', ADMINISTRADOR: 'Administrador' };
+    const formNome = document.getElementById('form-nome');
+    const formSenha = document.getElementById('form-senha');
+
+    function avisar(id, texto, ehErro) {
+      const aviso = document.getElementById(id);
+      aviso.textContent = texto;
+      aviso.className = !texto ? '' : ehErro ? 'erro' : 'aviso-sucesso';
+    }
+
+    // Iniciais do nome no círculo: "Maria Clara Souza" vira "MS"
+    function iniciais(nome) {
+      const partes = nome.trim().split(/\s+/);
+      const ultima = partes.length > 1 ? partes[partes.length - 1][0] : '';
+      return (partes[0][0] + ultima).toUpperCase();
+    }
+
+    function mostrarNome(nome) {
+      document.getElementById('nome-atual').textContent = nome;
+      document.getElementById('avatar').textContent = iniciais(nome);
+      formNome.nome.value = nome;
+      const linkPerfil = document.getElementById('link-perfil');
+      if (linkPerfil) linkPerfil.textContent = nome.split(' ')[0]; // o menu também muda
+    }
+
+    async function carregar() {
+      try {
+        const eu = await api('/auth/eu');
+        mostrarNome(eu.nome);
+        document.getElementById('email').textContent = eu.email;
+        const perfil = document.getElementById('perfil');
+        perfil.textContent = PERFIS[eu.perfil];
+        perfil.className = eu.perfil === 'ADMINISTRADOR' ? 'selo selo-aprovada' : 'selo';
+        if (eu.dataCadastro) {
+          const desde = new Date(eu.dataCadastro.replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR');
+          document.getElementById('desde').textContent = `Conta criada em ${desde}.`;
+        }
+        document.getElementById('conteudo').hidden = false;
+      } catch (erro) {
+        avisar('aviso', erro.message, true);
+        return;
+      }
+
+      // Números dos atalhos; sem eles a página continua funcionando
+      try {
+        const minhas = await api('/reivindicacoes/minhas');
+        document.getElementById('n-reivindicacoes').textContent = minhas.length;
+        document.getElementById('n-andamento').textContent = minhas
+          .filter((r) => r.status === 'ABERTA' || (r.status === 'APROVADA' && r.itemStatus !== 'DEVOLVIDO')).length;
+        document.getElementById('atalhos').hidden = false;
+      } catch {
+        // fica sem os atalhos
+      }
+    }
+
+    formNome.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      avisar('aviso-nome', '');
+      const nome = formNome.nome.value.trim();
+      if (nome.length < 3) return avisar('aviso-nome', 'O nome precisa ter pelo menos 3 caracteres.', true);
+      try {
+        const conta = await api('/usuarios/eu', { method: 'PATCH', body: { nome } });
+        mostrarNome(conta.nome);
+        avisar('aviso-nome', 'Nome salvo.', false);
+      } catch (erro) {
+        avisar('aviso-nome', erro.message, true);
+      }
+    });
+
+    formSenha.addEventListener('submit', async (evento) => {
+      evento.preventDefault();
+      avisar('aviso-senha', '');
+      const senhaAtual = formSenha.senhaAtual.value;
+      const novaSenha = formSenha.novaSenha.value;
+      if (!senhaAtual) return avisar('aviso-senha', 'Digite a senha atual.', true);
+      if (novaSenha.length < 8) return avisar('aviso-senha', 'A senha nova precisa ter pelo menos 8 caracteres.', true);
+      if (novaSenha !== document.getElementById('senha-confirmacao').value) {
+        return avisar('aviso-senha', 'A confirmação não é igual à senha nova.', true);
+      }
+      const botao = formSenha.querySelector('button[type="submit"]');
+      botao.disabled = true;
+      try {
+        await api('/usuarios/eu/senha', { method: 'PATCH', body: { senhaAtual, novaSenha } });
+        formSenha.reset();
+        avisar('aviso-senha', 'Senha trocada. Use a senha nova da próxima vez que entrar.', false);
+      } catch (erro) {
+        avisar('aviso-senha', erro.message, true);
+      }
+      botao.disabled = false;
+    });
+
+    carregar();
+  </script>
+</body>
+</html>

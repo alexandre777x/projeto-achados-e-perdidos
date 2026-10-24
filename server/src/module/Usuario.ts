@@ -24,12 +24,9 @@ export class Usuario {
     ativo = true,
     dataCadastro?: string
   ) {
-    nome = String(nome ?? "").trim();
+    nome = Usuario.validarNome(nome);
     email = String(email ?? "").trim().toLowerCase();
 
-    if (nome.length < 3 || nome.length > 100) {
-      throw new ErroDeNegocio("O nome precisa ter entre 3 e 100 caracteres.");
-    }
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       throw new ErroDeNegocio("Informe um e-mail válido.");
     }
@@ -59,6 +56,15 @@ export class Usuario {
   public static async gerarHash(senha: string): Promise<string> {
     Usuario.validarSenha(senha);
     return bcrypt.hash(senha, Usuario.CUSTO_BCRYPT);
+  }
+
+  /** Devolve o nome sem espaços nas pontas, ou recusa se não tiver de 3 a 100 caracteres. */
+  public static validarNome(nome: unknown): string {
+    const texto = String(nome ?? "").trim();
+    if (texto.length < 3 || texto.length > 100) {
+      throw new ErroDeNegocio("O nome precisa ter entre 3 e 100 caracteres.");
+    }
+    return texto;
   }
 
   public static validarSenha(senha: string): void {

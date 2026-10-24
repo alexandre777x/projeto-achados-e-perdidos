@@ -4,7 +4,7 @@ import { ItemService } from "../services/ItemService";
 import { UsuarioService } from "../services/UsuarioService";
 import { SessaoDaRequisicao } from "../middlewares/SessaoDaRequisicao";
 
-/** Gestão das contas pela administração. Para criar conta, a tela usa POST /api/auth/cadastro. */
+/** Meu perfil e gestão das contas pela administração. Para criar conta, a tela usa POST /api/auth/cadastro. */
 export class UsuarioController {
   private readonly servico = new UsuarioService();
 
@@ -21,6 +21,20 @@ export class UsuarioController {
   /** Corpo: { ativo: true | false } */
   public mudarAtivo(req: Request, res: Response): void {
     res.json(this.servico.mudarAtivo(UsuarioController.id(req), req.body?.ativo, SessaoDaRequisicao.usuarioId(req)));
+  }
+
+  /** Meu perfil. Corpo: { nome } */
+  public atualizarMeuNome(req: Request, res: Response): void {
+    const usuario = this.servico.atualizarMeuNome(SessaoDaRequisicao.usuarioId(req), req.body?.nome);
+    // O menu mostra o nome da sessão: já atualiza, sem esperar a próxima requisição
+    req.session.usuario = { id: usuario.getId() as number, nome: usuario.getNome(), perfil: usuario.getPerfil() };
+    res.json(usuario);
+  }
+
+  /** Meu perfil. Corpo: { senhaAtual, novaSenha } */
+  public async trocarMinhaSenha(req: Request, res: Response): Promise<void> {
+    await this.servico.trocarMinhaSenha(SessaoDaRequisicao.usuarioId(req), req.body?.senhaAtual, req.body?.novaSenha);
+    res.json({ mensagem: "Senha alterada." });
   }
 
   private static id(req: Request): number {

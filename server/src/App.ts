@@ -172,9 +172,12 @@ export class App {
     this.api.get("/devolucoes/relatorio.csv", this.exigirAdmin, (req, res) => c.relatorioCsv(req, res));
   }
 
-  /** Gestão das contas pela administração (RF01.5) */
+  /** Meu perfil e gestão das contas pela administração (RF01.5) */
   private configurarRotasDeUsuarios(): void {
     const c = this.usuarioController;
+    // Meu perfil: qualquer pessoa logada, só na própria conta
+    this.api.patch("/usuarios/eu", this.exigirLogin, (req, res) => c.atualizarMeuNome(req, res));
+    this.api.patch("/usuarios/eu/senha", this.exigirLogin, (req, res) => c.trocarMinhaSenha(req, res));
     this.api.get("/usuarios", this.exigirAdmin, (req, res) => c.listar(req, res));
     this.api.patch("/usuarios/:id/perfil", this.exigirAdmin, (req, res) => c.mudarPerfil(req, res));
     this.api.patch("/usuarios/:id/ativo", this.exigirAdmin, (req, res) => c.mudarAtivo(req, res));

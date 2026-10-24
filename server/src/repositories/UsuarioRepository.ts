@@ -54,6 +54,10 @@ export class UsuarioRepository extends Repositorio {
       .map((linha) => this.paraUsuario(linha));
   }
 
+  public atualizarNome(id: number, nome: string): void {
+    this.db.prepare("UPDATE usuario SET nome = ? WHERE id = ?").run(nome, id);
+  }
+
   public atualizarPerfil(id: number, perfil: PerfilUsuario): void {
     this.db.prepare("UPDATE usuario SET perfil = ? WHERE id = ?").run(perfil, id);
   }

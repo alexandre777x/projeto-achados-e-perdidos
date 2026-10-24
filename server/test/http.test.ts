@@ -588,3 +588,24 @@ describe("gestão de contas pela HTTP: a sessão acompanha o banco", () => {
     assert.equal((await new Navegador().entrar(u.email)).status, 403);
   });
 });
+
+describe("Meu perfil pela HTTP", () => {
+  test("trocar o nome muda o nome do menu na hora", async () => {
+    const { n } = await logado(PerfilUsuario.ALUNO);
+    const r = await n.json("/api/usuarios/eu", "PATCH", { nome: "Nome Novo" });
+    assert.equal(r.status, 200);
+    assert.equal((await n.pedir("/api/auth/eu")).corpo.nome, "Nome Novo");
+  });
+
+  test("trocar a senha: a antiga deixa de entrar e a nova entra", async () => {
+    const { n, u } = await logado(PerfilUsuario.PROFESSOR);
+    assert.equal((await n.json("/api/usuarios/eu/senha", "PATCH", { senhaAtual: "errada123", novaSenha: "outrasenha1" })).status, 400);
+    assert.equal((await n.json("/api/usuarios/eu/senha", "PATCH", { senhaAtual: SENHA, novaSenha: "outrasenha1" })).status, 200);
+    assert.equal((await new Navegador().entrar(u.email)).status, 401, "a senha antiga não entra mais");
+    assert.equal((await new Navegador().entrar(u.email, "outrasenha1")).status, 200);
+  });
+
+  test("sem login: 401", async () => {
+    assert.equal((await new Navegador().json("/api/usuarios/eu", "PATCH", { nome: "Alguém" })).status, 401);
+  });
+});

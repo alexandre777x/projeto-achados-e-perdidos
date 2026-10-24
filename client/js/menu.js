@@ -54,7 +54,16 @@ async function atualizarContadorDeMensagens() {
 
   if (usuario.perfil !== 'ADMINISTRADOR') linkAdmin?.remove();
 
-  linkSair.textContent = `Sair (${usuario.nome.split(' ')[0]})`;
+  // "Meu perfil": o primeiro nome da pessoa, ao lado do "Sair"
+  const linkPerfil = document.createElement('a');
+  linkPerfil.id = 'link-perfil';
+  linkPerfil.href = '/perfil.html';
+  linkPerfil.title = 'Meu perfil';
+  linkPerfil.textContent = usuario.nome.split(' ')[0];
+  if (location.pathname === '/perfil.html') linkPerfil.setAttribute('aria-current', 'page');
+  linkSair.before(linkPerfil);
+
+  linkSair.textContent = 'Sair';
   linkSair.addEventListener('click', async (evento) => {
     evento.preventDefault();
     await api('/auth/logout', { method: 'POST' }).catch(() => {});
