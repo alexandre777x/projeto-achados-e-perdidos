@@ -41,8 +41,8 @@
           </span>
         </a>
 
-        <!-- Andamento: enviada, decisão e entrega -->
-        <ol class="linha-do-tempo" id="linha-do-tempo"></ol>
+        <!-- Andamento: enviado, análise, aprovação e entrega -->
+        <div id="progresso"></div>
         <p class="proximo-passo" id="proximo-passo"></p>
 
         <dl class="dados-item">
@@ -145,6 +145,7 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script src="/js/progresso.js"></script>
   <script>
     // RF04.3, RF04.4 e RF04.7: acompanhar, conversar e decidir
     const id = new URLSearchParams(location.search).get('id');
@@ -167,35 +168,6 @@
       const el = document.getElementById(id);
       el.textContent = texto ?? '';
       return el;
-    }
-
-    // Etapas do pedido: cada uma feita, atual, pendente ou recusada
-    function linhaDoTempo(r) {
-      const etapas = [{ titulo: 'Pedido enviado', data: r.dataAbertura, estado: 'feita' }];
-      if (r.status === 'ABERTA') {
-        etapas.push({ titulo: 'Em análise pela administração', estado: 'atual' });
-        etapas.push({ titulo: 'Entrega do objeto', estado: 'pendente' });
-      } else if (r.status === 'REJEITADA') {
-        etapas.push({ titulo: 'Rejeitada', data: r.dataDecisao, estado: 'recusada' });
-      } else {
-        etapas.push({ titulo: 'Aprovada', data: r.dataDecisao, estado: 'feita' });
-        etapas.push(r.devolucao
-          ? { titulo: 'Objeto entregue', data: r.devolucao.dataHora, estado: 'feita' }
-          : { titulo: 'Aguardando retirada', estado: 'atual' });
-      }
-      return etapas.map((etapa) => {
-        const li = document.createElement('li');
-        li.className = `etapa-${etapa.estado}`;
-        const titulo = document.createElement('strong');
-        titulo.textContent = etapa.titulo;
-        li.append(titulo);
-        if (etapa.data) {
-          const data = document.createElement('small');
-          data.textContent = dataHora(etapa.data);
-          li.append(data);
-        }
-        return li;
-      });
     }
 
     // As respostas chegam num texto só, uma por linha, como "Pergunta: resposta"
@@ -234,7 +206,15 @@
       }
       document.getElementById('item-foto').replaceWith(foto);
 
-      document.getElementById('linha-do-tempo').replaceChildren(...linhaDoTempo(r));
+      const barra = barraDeProgresso({
+        status: r.status,
+        dataAbertura: r.dataAbertura,
+        dataDecisao: r.dataDecisao,
+        entregue: !!r.devolucao,
+        dataEntrega: r.devolucao?.dataHora,
+      }, true);
+      barra.id = 'progresso';
+      document.getElementById('progresso').replaceWith(barra);
       preencher('reivindicante', r.reivindicante);
       document.getElementById('bloco-motivo').hidden = !r.motivoRejeicao;
       preencher('motivo', r.motivoRejeicao);

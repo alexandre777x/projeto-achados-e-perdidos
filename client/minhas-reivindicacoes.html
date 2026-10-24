@@ -44,6 +44,7 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script src="/js/progresso.js"></script>
   <script>
     // RF04.7: estado de cada reivindicação (aberta, aprovada, rejeitada)
     const ROTULOS = { ABERTA: 'Aberta', APROVADA: 'Aprovada', REJEITADA: 'Rejeitada' };
@@ -127,7 +128,13 @@
       acao.className = 'reivindicacao-acao';
       acao.textContent = r.status === 'ABERTA' ? 'Ver conversa' : 'Ver detalhes';
 
-      corpo.append(topo, datas, passo);
+      const barra = barraDeProgresso({
+        status: r.status,
+        dataAbertura: r.dataAbertura,
+        dataDecisao: r.dataDecisao,
+        entregue: r.status === 'APROVADA' && r.itemStatus === 'DEVOLVIDO',
+      }, true);
+      corpo.append(topo, datas, barra, passo);
       link.append(foto, corpo, acao);
       li.append(link);
       return li;

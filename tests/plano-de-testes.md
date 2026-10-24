@@ -37,7 +37,7 @@ Testes que olham o código: cobrem os desvios (if/else) das regras de negócio R
 Na pasta `server/`:
 
 ```bash
-npm test                # roda os 259 testes (cerca de 4 segundos)
+npm test                # roda os 271 testes (cerca de 4 segundos)
 npm run test:cobertura  # roda e mostra a cobertura de linhas e de desvios por arquivo
 ```
 
@@ -53,7 +53,8 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 | `test/module/relatorio.test.ts` | Model | PeriodoDeDatas (CT17) e o CSV do relatório: BOM, `;`, aspas, vírgula decimal e proteção contra fórmula (CT18) |
 | `test/services/regras-de-negocio.test.ts` | Service + banco | **RN01 a RN05**, um bloco para cada regra (tabela abaixo) |
 | `test/services/ItemService.test.ts` | Service + banco | Registro, manutenção (RF02.6), busca com todos os filtros (RF03) e detalhe por perfil |
-| `test/services/ReivindicacaoService.test.ts` | Service + banco | Abrir, rejeitar com e sem outras abertas, quem pode decidir, mensagens e provas |
+| `test/services/ReivindicacaoService.test.ts` | Service + banco | Abrir, rejeitar com e sem outras abertas, quem pode decidir, mensagens, não lidas, e-mail da decisão e provas |
+| `test/services/UsuarioService.test.ts` | Service + banco | Gestão de contas: busca, mudar perfil, desativar e as travas (própria conta e último administrador) |
 | `test/services/autenticacao.test.ts` | Service + banco | Cadastro (RF01.1, RF01.2, RF01.5), login (CT02, CT03) e recuperação de senha (CT12 a CT14) |
 | `test/database/migracao.test.ts` | Banco | Migração da MR01 (local em texto livre): monta um banco no formato antigo e confere que nenhum dado se perde e que as ligações entre tabelas continuam valendo |
 | `test/http.test.ts` | API inteira | Servidor de verdade: login obrigatório no site inteiro (CT19), middlewares de login e perfil (CT11), upload (CT04, CT15, CT16), erros 400/404/500 e o fluxo completo até o CSV |
@@ -70,11 +71,11 @@ Usam o executor de testes do próprio Node (`node:test`), sem dependência nova.
 
 ### Resultado de 23/10/2026
 
-**259 testes, 259 aprovados** (24/10/2026, com o filtro de local, a ordenação da busca, a foto do item nas reivindicações, o contador de mensagens não lidas, o e-mail da decisão, a busca sem acento, o "Carregar mais" e os itens parados).
+**271 testes, 271 aprovados** (24/10/2026, com o filtro de local, a ordenação da busca, a foto do item nas reivindicações, o contador de mensagens não lidas, o e-mail da decisão, a busca sem acento, o "Carregar mais", os itens parados e a gestão de usuários).
 
 | Cobertura (`npm run test:cobertura`) | Linhas | Desvios (branches) | Funções |
 | --- | --- | --- | --- |
-| Total | 97,0% | 93,4% | 90,7% |
+| Total | 97,0% | 93,4% | 90,9% |
 
 Os services (onde ficam as regras) e os models principais têm de 96% a 99% das linhas cobertas. Na leitura do relatório:
 

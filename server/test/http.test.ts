@@ -553,3 +553,38 @@ describe("login obrigatório: o site inteiro exige conta", () => {
     assert.equal(paraLogin(await new Navegador().pedir("/itens.html", { method: "POST" })), "/login.html");
   });
 });
+
+describe("gestão de contas pela HTTP: a sessão acompanha o banco", () => {
+  test("só administrador lista e muda contas", async () => {
+    const { n: aluno } = await logado(PerfilUsuario.ALUNO);
+    assert.equal((await aluno.pedir("/api/usuarios")).status, 403);
+    const { n: admin } = await logado(PerfilUsuario.ADMINISTRADOR);
+    const lista = await admin.pedir("/api/usuarios?q=pessoa");
+    assert.equal(lista.status, 200);
+    assert.ok(Array.isArray(lista.corpo));
+    assert.equal((await admin.json("/api/usuarios/abc/perfil", "PATCH", { perfil: "ALUNO" })).status, 404);
+  });
+
+  test("perfil trocado vale na hora, sem precisar entrar de novo", async () => {
+    const { n: admin } = await logado(PerfilUsuario.ADMINISTRADOR);
+    const { n: promovido, u } = await logado(PerfilUsuario.PROFESSOR);
+    assert.equal((await promovido.pedir("/api/devolucoes/relatorio")).status, 403);
+
+    assert.equal((await admin.json(`/api/usuarios/${u.id}/perfil`, "PATCH", { perfil: "ADMINISTRADOR" })).status, 200);
+    assert.equal((await promovido.pedir("/api/devolucoes/relatorio")).status, 200, "virou administrador");
+
+    assert.equal((await admin.json(`/api/usuarios/${u.id}/perfil`, "PATCH", { perfil: "ALUNO" })).status, 200);
+    assert.equal((await promovido.pedir("/api/devolucoes/relatorio")).status, 403, "deixou de ser");
+  });
+
+  test("conta desativada perde o acesso na hora e não entra de novo", async () => {
+    const { n: admin } = await logado(PerfilUsuario.ADMINISTRADOR);
+    const { n: aluno, u } = await logado(PerfilUsuario.ALUNO);
+    assert.equal((await aluno.pedir("/api/reivindicacoes/minhas")).status, 200);
+
+    assert.equal((await admin.json(`/api/usuarios/${u.id}/ativo`, "PATCH", { ativo: false })).status, 200);
+    assert.equal((await aluno.pedir("/api/reivindicacoes/minhas")).status, 401);
+    assert.equal((await aluno.pedir("/itens.html")).status, 302, "as páginas também voltam para o login");
+    assert.equal((await new Navegador().entrar(u.email)).status, 403);
+  });
+});

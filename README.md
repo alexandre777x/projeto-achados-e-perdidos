@@ -38,6 +38,7 @@ Abra http://localhost:3000: o site abre na tela de login. O site inteiro exige c
 - O banco é criado sozinho na primeira execução, a partir de `server/database/schema.sql` e `seed.sql`.
   Se o `schema.sql` mudar, apague `server/data/campuslost.db` para o banco ser recriado (os dados de teste se perdem).
 - O primeiro administrador precisa ser criado pelo `npm run criar-admin`, porque o RF01.5 proíbe virar administrador pelo cadastro.
+  Os seguintes são criados pelo site: **Administração → Usuários**, onde um administrador cria contas, dá o perfil de administrador a quem já tem conta e desativa contas.
 - Sem e-mail configurado no `.env`, os e-mails (link de recuperação de senha e aviso de reivindicação aprovada ou rejeitada) aparecem no terminal do servidor.
 
 | Comando (em `server/`) | O que faz |

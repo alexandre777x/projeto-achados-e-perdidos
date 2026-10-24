@@ -1,9 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import { PerfilUsuario } from "../module/PerfilUsuario";
 import { SessaoDaRequisicao } from "./SessaoDaRequisicao";
+import { UsuarioRepository } from "../repositories/UsuarioRepository";
 
 /** Controle de acesso por sessão: colocado antes do handler nas rotas protegidas. */
 export class AutenticacaoMiddleware {
+  private readonly usuarios = new UsuarioRepository();
+
   /** Páginas que quem não entrou pode abrir: entrar, criar conta e recuperar a senha. */
   private static readonly PAGINAS_PUBLICAS = new Set([
     "/login.html",
@@ -53,6 +56,25 @@ export class AutenticacaoMiddleware {
 
     const voltar = req.method === "GET" && req.path !== "/" ? `?voltar=${encodeURIComponent(req.originalUrl)}` : "";
     res.redirect(`/login.html${voltar}`);
+  }
+
+  /**
+   * A sessão guarda o perfil do momento do login. Como a administração pode mudar o perfil
+   * ou desativar uma conta, a cada requisição a sessão é conferida com o banco: conta
+   * apagada ou desativada perde o login, e perfil ou nome novo passa a valer na hora.
+   */
+  public sincronizarSessao(req: Request, res: Response, next: NextFunction): void {
+    const naSessao = SessaoDaRequisicao.usuario(req);
+    if (!naSessao) {
+      return next();
+    }
+    const usuario = this.usuarios.buscarPorId(naSessao.id);
+    if (!usuario || !usuario.estaAtivo()) {
+      delete req.session.usuario;
+    } else if (usuario.getPerfil() !== naSessao.perfil || usuario.getNome() !== naSessao.nome) {
+      req.session.usuario = { id: naSessao.id, nome: usuario.getNome(), perfil: usuario.getPerfil() };
+    }
+    next();
   }
 
   /** Qualquer usuário autenticado (aluno, professor ou administrador). */

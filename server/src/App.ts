@@ -7,6 +7,7 @@ import { ItemController } from "./controllers/ItemController";
 import { ReferenciaController } from "./controllers/ReferenciaController";
 import { ReivindicacaoController } from "./controllers/ReivindicacaoController";
 import { DevolucaoController } from "./controllers/DevolucaoController";
+import { UsuarioController } from "./controllers/UsuarioController";
 import { AutenticacaoMiddleware } from "./middlewares/AutenticacaoMiddleware";
 import { ErrorHandlerMiddleware } from "./middlewares/ErrorHandlerMiddleware";
 import { UploadMiddleware } from "./middlewares/UploadMiddleware";
@@ -29,6 +30,7 @@ export class App {
   private readonly referenciaController = new ReferenciaController();
   private readonly reivindicacaoController = new ReivindicacaoController();
   private readonly devolucaoController = new DevolucaoController();
+  private readonly usuarioController = new UsuarioController();
   private readonly autenticacaoMiddleware = new AutenticacaoMiddleware();
   private readonly errorHandlerMiddleware = new ErrorHandlerMiddleware();
 
@@ -86,6 +88,8 @@ export class App {
         cookie: { httpOnly: true, sameSite: "lax", maxAge: Configuracao.minutosSessao * 60 * 1000 },
       })
     );
+    // A sessão acompanha o banco: conta desativada sai, e perfil trocado vale na hora
+    this.app.use((req, res, next) => this.autenticacaoMiddleware.sincronizarSessao(req, res, next));
   }
 
   /** Front-end (HTML, CSS e JS) e fotos dos itens, só para quem entrou. As provas de posse nem passam por aqui. */
@@ -104,6 +108,7 @@ export class App {
     this.configurarRotasDeReferencias();
     this.configurarRotasDeReivindicacoes();
     this.configurarRotasDeDevolucoes();
+    this.configurarRotasDeUsuarios();
 
     this.app.use("/api", this.api);
     this.app.use("/api", (req, res) => this.errorHandlerMiddleware.naoEncontrado(req, res));
@@ -165,6 +170,14 @@ export class App {
     this.api.get("/devolucoes/pendentes", this.exigirAdmin, (req, res) => c.listarPendentes(req, res));
     this.api.get("/devolucoes/relatorio", this.exigirAdmin, (req, res) => c.relatorio(req, res));
     this.api.get("/devolucoes/relatorio.csv", this.exigirAdmin, (req, res) => c.relatorioCsv(req, res));
+  }
+
+  /** Gestão das contas pela administração (RF01.5) */
+  private configurarRotasDeUsuarios(): void {
+    const c = this.usuarioController;
+    this.api.get("/usuarios", this.exigirAdmin, (req, res) => c.listar(req, res));
+    this.api.patch("/usuarios/:id/perfil", this.exigirAdmin, (req, res) => c.mudarPerfil(req, res));
+    this.api.patch("/usuarios/:id/ativo", this.exigirAdmin, (req, res) => c.mudarAtivo(req, res));
   }
 
   /** Precisa ser registrado DEPOIS das rotas: só assim o Express sabe que é um error handler. */
