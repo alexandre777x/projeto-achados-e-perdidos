@@ -2,6 +2,7 @@ export * from "./ErroDeNegocio";
 export * from "./PerfilUsuario";
 export * from "./StatusItem";
 export * from "./StatusReivindicacao";
+export * from "./LadoConversa";
 export * from "./TipoDocumento";
 export * from "./Usuario";
 export * from "./Categoria";

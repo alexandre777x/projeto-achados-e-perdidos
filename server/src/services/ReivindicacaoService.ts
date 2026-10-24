@@ -4,19 +4,30 @@ import { ProvaPosse } from "../module/ProvaPosse";
 import { StatusItem } from "../module/StatusItem";
 import { PerfilUsuario } from "../module/PerfilUsuario";
 import { ErroDeNegocio } from "../module/ErroDeNegocio";
+import { LadoConversa } from "../module/LadoConversa";
+import { StatusReivindicacao } from "../module/StatusReivindicacao";
+import { Configuracao } from "../config/Configuracao";
 import { ItemRepository } from "../repositories/ItemRepository";
 import { UsuarioRepository } from "../repositories/UsuarioRepository";
 import { DevolucaoRepository } from "../repositories/DevolucaoRepository";
 import {
   ArquivoDeProva,
+  NaoLidasDaReivindicacao,
   ReivindicacaoRepository,
   ReivindicacaoResumo,
 } from "../repositories/ReivindicacaoRepository";
+import { EmailService } from "./EmailService";
 
 /** Quem está fazendo a requisição (vem da sessão). */
 export interface Solicitante {
   id: number;
   perfil: PerfilUsuario;
+}
+
+/** Mensagens não lidas: o total e quantas em cada reivindicação. */
+export interface ContagemNaoLidas {
+  total: number;
+  porReivindicacao: Record<number, number>;
 }
 
 /**
@@ -30,6 +41,7 @@ export class ReivindicacaoService {
   private readonly itemRepo = new ItemRepository();
   private readonly usuarioRepo = new UsuarioRepository();
   private readonly devolucaoRepo = new DevolucaoRepository();
+  private readonly emailService = new EmailService();
 
   /** RF04.1, RF04.2, RF04.5 e RF04.6. As provas já foram gravadas pelo UploadMiddleware. */
   public abrir(itemId: number, respostas: unknown, provas: ArquivoDeProva[], quem: Solicitante): Reivindicacao {
@@ -94,10 +106,16 @@ export class ReivindicacaoService {
   /**
    * RF04.3: para o reivindicante, as mensagens da administração aparecem só como
    * "Administração", sem o nome de quem escreveu.
+   * Quem abre a conversa a lê: o lado dele fica marcado como lido até a última mensagem.
    */
   public listarMensagens(id: number, quem: Solicitante) {
-    this.buscarComAcesso(id, quem);
-    return this.reivindicacaoRepo.listarMensagens(id).map((m) => {
+    const reivindicacao = this.buscarComAcesso(id, quem);
+    const mensagens = this.reivindicacaoRepo.listarMensagens(id);
+    if (mensagens.length > 0) {
+      const ultima = Math.max(...mensagens.map((m) => m.id));
+      this.reivindicacaoRepo.marcarLida(id, ReivindicacaoService.ladoDe(reivindicacao, quem), ultima);
+    }
+    return mensagens.map((m) => {
       const daAdministracao = m.autorPerfil === PerfilUsuario.ADMINISTRADOR;
       return {
         id: m.id,
@@ -110,10 +128,25 @@ export class ReivindicacaoService {
     });
   }
 
-  /** RF04.3 */
+  /** RF04.3. Quem escreve já viu a conversa até a própria mensagem. */
   public enviarMensagem(id: number, texto: unknown, quem: Solicitante): void {
-    this.buscarComAcesso(id, quem);
-    this.reivindicacaoRepo.salvarMensagem(new Mensagem(String(texto ?? ""), id, quem.id));
+    const reivindicacao = this.buscarComAcesso(id, quem);
+    const mensagemId = this.reivindicacaoRepo.salvarMensagem(new Mensagem(String(texto ?? ""), id, quem.id));
+    this.reivindicacaoRepo.marcarLida(id, ReivindicacaoService.ladoDe(reivindicacao, quem), mensagemId);
+  }
+
+  /**
+   * Contador de mensagens não lidas: nas próprias reivindicações e, para a administração,
+   * também nas reivindicações dos outros.
+   */
+  public contarNaoLidas(quem: Solicitante): { minhas: ContagemNaoLidas; administracao: ContagemNaoLidas | null } {
+    return {
+      minhas: ReivindicacaoService.somar(this.reivindicacaoRepo.contarNaoLidas(LadoConversa.REIVINDICANTE, quem.id)),
+      administracao:
+        quem.perfil === PerfilUsuario.ADMINISTRADOR
+          ? ReivindicacaoService.somar(this.reivindicacaoRepo.contarNaoLidas(LadoConversa.ADMINISTRACAO, quem.id))
+          : null,
+    };
   }
 
   /**
@@ -121,22 +154,26 @@ export class ReivindicacaoService {
    * O item continua "Em reivindicação" até a devolução (RF05).
    */
   public aprovar(id: number, administradorId: number): Reivindicacao {
-    return this.reivindicacaoRepo.emTransacao(() => {
+    const { aprovada, rejeitadas } = this.reivindicacaoRepo.emTransacao(() => {
       const reivindicacao = this.buscarParaDecidir(id, administradorId);
       reivindicacao.aprovar(administradorId);
       this.reivindicacaoRepo.atualizarDecisao(reivindicacao);
 
-      for (const outra of this.reivindicacaoRepo.listarAbertasDoItem(reivindicacao.getItemId())) {
+      const outras = this.reivindicacaoRepo.listarAbertasDoItem(reivindicacao.getItemId());
+      for (const outra of outras) {
         outra.rejeitar(administradorId, ReivindicacaoService.MOTIVO_OUTRA_APROVADA);
         this.reivindicacaoRepo.atualizarDecisao(outra);
       }
-      return this.reivindicacaoRepo.buscarPorId(id) as Reivindicacao;
+      return { aprovada: this.reivindicacaoRepo.buscarPorId(id) as Reivindicacao, rejeitadas: outras };
     });
+    // Os e-mails saem só depois que a decisão foi gravada
+    for (const decidida of [aprovada, ...rejeitadas]) this.avisarDecisao(decidida);
+    return aprovada;
   }
 
   /** RF04.4 e RF04.5: sem outra reivindicação aberta, o item volta a ficar disponível. */
   public rejeitar(id: number, administradorId: number, motivo: unknown): Reivindicacao {
-    return this.reivindicacaoRepo.emTransacao(() => {
+    const rejeitada = this.reivindicacaoRepo.emTransacao(() => {
       const reivindicacao = this.buscarParaDecidir(id, administradorId);
       reivindicacao.rejeitar(administradorId, String(motivo ?? ""));
       this.reivindicacaoRepo.atualizarDecisao(reivindicacao);
@@ -149,6 +186,39 @@ export class ReivindicacaoService {
       }
       return this.reivindicacaoRepo.buscarPorId(id) as Reivindicacao;
     });
+    this.avisarDecisao(rejeitada);
+    return rejeitada;
+  }
+
+  /**
+   * Avisa por e-mail quem reivindicou que o pedido foi aprovado ou rejeitado.
+   * O envio não segura a resposta: se falhar, a decisão continua valendo e o erro vai para o log.
+   */
+  private avisarDecisao(reivindicacao: Reivindicacao): void {
+    const pessoa = this.usuarioRepo.buscarPorId(reivindicacao.getReivindicanteId());
+    const item = this.itemRepo.buscarPorId(reivindicacao.getItemId());
+    if (!pessoa || !item) {
+      return;
+    }
+    const link = `${Configuracao.urlBase}/reivindicacao.html?id=${reivindicacao.getId()}`;
+    const aprovada = reivindicacao.getStatus() === StatusReivindicacao.APROVADA;
+    const texto = aprovada
+      ? `Olá, ${pessoa.getNome()}!\n\n` +
+        `Sua reivindicação nº ${reivindicacao.getId()} do item "${item.getTitulo()}" foi aprovada.\n` +
+        "Retire o objeto na segurança do campus levando um documento com foto.\n\n" +
+        `Acompanhe o pedido: ${link}`
+      : `Olá, ${pessoa.getNome()}!\n\n` +
+        `Sua reivindicação nº ${reivindicacao.getId()} do item "${item.getTitulo()}" foi rejeitada.\n` +
+        `Motivo: ${reivindicacao.getMotivoRejeicao()}\n\n` +
+        `Se achar que houve engano, explique na conversa do pedido: ${link}`;
+
+    this.emailService
+      .enviar({
+        para: pessoa.getEmail(),
+        assunto: `CampusLost: sua reivindicação foi ${aprovada ? "aprovada" : "rejeitada"}`,
+        texto,
+      })
+      .catch((erro) => console.error("Falha ao enviar e-mail da decisão:", (erro as Error).message));
   }
 
   /** RF04.2 e RNF09: só o reivindicante e a administração baixam as provas. */
@@ -174,6 +244,18 @@ export class ReivindicacaoService {
       throw new ErroDeNegocio("Reivindicação não encontrada.", 404);
     }
     return reivindicacao;
+  }
+
+  /** De que lado da conversa a pessoa está: quem reivindicou ou a administração. */
+  private static ladoDe(reivindicacao: Reivindicacao, quem: Solicitante): LadoConversa {
+    return reivindicacao.getReivindicanteId() === quem.id ? LadoConversa.REIVINDICANTE : LadoConversa.ADMINISTRACAO;
+  }
+
+  private static somar(lista: NaoLidasDaReivindicacao[]): ContagemNaoLidas {
+    return {
+      total: lista.reduce((soma, r) => soma + r.naoLidas, 0),
+      porReivindicacao: Object.fromEntries(lista.map((r) => [r.reivindicacaoId, r.naoLidas])),
+    };
   }
 
   /** Um administrador não decide a própria reivindicação. */

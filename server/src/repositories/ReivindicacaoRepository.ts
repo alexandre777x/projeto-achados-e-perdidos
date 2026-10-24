@@ -5,6 +5,7 @@ import { Mensagem } from "../module/Mensagem";
 import { StatusItem } from "../module/StatusItem";
 import { PerfilUsuario } from "../module/PerfilUsuario";
 import { StatusReivindicacao } from "../module/StatusReivindicacao";
+import { LadoConversa } from "../module/LadoConversa";
 
 interface LinhaReivindicacao {
   id: number;
@@ -55,7 +56,13 @@ export interface ArquivoDeProva {
   nomeOriginal: string;
 }
 
-/** Tabelas reivindicacao, prova_posse e mensagem (RF04). */
+/** Quantas mensagens de uma reivindicação um lado da conversa ainda não leu. */
+export interface NaoLidasDaReivindicacao {
+  reivindicacaoId: number;
+  naoLidas: number;
+}
+
+/** Tabelas reivindicacao, prova_posse, mensagem e leitura_conversa (RF04). */
 export class ReivindicacaoRepository extends Repositorio {
   private static readonly SELECT_RESUMO = `
     SELECT r.id, r.status, r.data_abertura AS dataAbertura, r.data_decisao AS dataDecisao,
@@ -179,11 +186,47 @@ export class ReivindicacaoRepository extends Repositorio {
       .all(reivindicacaoId);
   }
 
-  /** RF04.3 */
-  public salvarMensagem(mensagem: Mensagem): void {
-    this.db
+  /** RF04.3. Devolve o id da mensagem gravada. */
+  public salvarMensagem(mensagem: Mensagem): number {
+    const resultado = this.db
       .prepare("INSERT INTO mensagem (texto, reivindicacao_id, autor_id) VALUES (?, ?, ?)")
       .run(mensagem.getTexto(), mensagem.getReivindicacaoId(), mensagem.getAutorId());
+    return Number(resultado.lastInsertRowid);
+  }
+
+  /** Marca a conversa como lida por um lado até a mensagem informada (nunca volta atrás). */
+  public marcarLida(reivindicacaoId: number, lado: LadoConversa, ultimaMensagemId: number): void {
+    this.db
+      .prepare(
+        `INSERT INTO leitura_conversa (reivindicacao_id, lado, ultima_mensagem_id) VALUES (?, ?, ?)
+         ON CONFLICT (reivindicacao_id, lado)
+         DO UPDATE SET ultima_mensagem_id = MAX(ultima_mensagem_id, excluded.ultima_mensagem_id)`
+      )
+      .run(reivindicacaoId, lado, ultimaMensagemId);
+  }
+
+  /**
+   * Mensagens não lidas por reivindicação, só das que têm alguma.
+   * - Quem reivindicou: nas suas reivindicações, as mensagens escritas pela administração.
+   * - Administração: nas reivindicações dos outros, as mensagens de quem reivindicou.
+   *   A do próprio administrador fica de fora, porque ali ele é quem reivindicou.
+   */
+  public contarNaoLidas(lado: LadoConversa, usuarioId: number): NaoLidasDaReivindicacao[] {
+    const condicao =
+      lado === LadoConversa.REIVINDICANTE
+        ? "r.reivindicante_id = ? AND m.autor_id <> r.reivindicante_id"
+        : "r.reivindicante_id <> ? AND m.autor_id = r.reivindicante_id";
+    return this.db
+      .prepare<[LadoConversa, number], NaoLidasDaReivindicacao>(
+        `SELECT r.id AS reivindicacaoId, COUNT(m.id) AS naoLidas
+         FROM reivindicacao r
+         JOIN mensagem m ON m.reivindicacao_id = r.id
+         LEFT JOIN leitura_conversa l ON l.reivindicacao_id = r.id AND l.lado = ?
+         WHERE m.id > COALESCE(l.ultima_mensagem_id, 0) AND ${condicao}
+         GROUP BY r.id
+         ORDER BY r.id`
+      )
+      .all(lado, usuarioId);
   }
 
   private static paraReivindicacao(linha: LinhaReivindicacao): Reivindicacao {

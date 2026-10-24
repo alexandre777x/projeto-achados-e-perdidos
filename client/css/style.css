@@ -2374,3 +2374,51 @@ img.foto-principal {
   font-size: 0.8rem;
   padding: 5px 12px;
 }
+
+/* ==========================================================================
+   Mensagens não lidas
+   ========================================================================== */
+/* Bolinha com o número, no menu */
+.contador {
+  display: inline-grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  line-height: 1;
+  background: var(--magenta);
+  color: #fff;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.35);
+  vertical-align: 1px;
+}
+
+/* "2 mensagens novas" nos cartões das listas */
+.etiqueta-novas {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  background: #fde7f3;
+  color: #b0166c;
+}
+
+.etiqueta-novas::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--magenta);
+}
+
+.reivindicacao-topo .etiqueta-novas {
+  margin-top: 0;
+}

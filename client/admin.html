@@ -144,10 +144,15 @@
       return foto;
     }
 
+    // Mensagens de quem reivindicou que a administração ainda não leu, por reivindicação
+    const naoLidas = api('/reivindicacoes/nao-lidas')
+      .then((contagem) => contagem.administracao?.porReivindicacao ?? {})
+      .catch(() => ({})); // sem a contagem, as listas aparecem iguais
+
     // Listas de reivindicações: cada cartão abre a página da reivindicação
     function listarReivindicacoes(rota, opcoes) {
-      api(rota)
-        .then((reivindicacoes) => {
+      Promise.all([api(rota), naoLidas])
+        .then(([reivindicacoes, novas]) => {
           contar(opcoes.contador, reivindicacoes.length);
           document.getElementById(opcoes.vazio).hidden = reivindicacoes.length > 0;
           document.getElementById(opcoes.lista).replaceChildren(...reivindicacoes.map((r) => {
@@ -164,6 +169,12 @@
             quem.className = 'suave reivindicacao-datas';
             quem.textContent = `${r.reivindicante} · item nº ${r.itemId} · ${opcoes.rotuloData} ${dataHora(r[opcoes.campoData])}`;
             corpo.append(titulo, quem);
+            if (novas[r.id]) {
+              const etiqueta = document.createElement('span');
+              etiqueta.className = 'etiqueta-novas';
+              etiqueta.textContent = novas[r.id] === 1 ? '1 mensagem nova' : `${novas[r.id]} mensagens novas`;
+              corpo.append(etiqueta);
+            }
 
             const acao = document.createElement('span');
             acao.className = 'reivindicacao-acao';

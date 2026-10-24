@@ -421,7 +421,13 @@ describe("fluxo completo pela HTTP: reivindicar, conversar, decidir, devolver e 
     const id = (await dono.pedir("/api/reivindicacoes", { method: "POST", body: f })).corpo.id;
 
     assert.equal((await dono.json(`/api/reivindicacoes/${id}/mensagens`, "POST", { texto: "É meu" })).status, 201);
+    // Rota de não lidas: antes de /:id, senão "nao-lidas" seria lido como um id
+    const naoLidas = async () => (await admin.pedir("/api/reivindicacoes/nao-lidas")).corpo.administracao.porReivindicacao[id];
+    assert.equal(await naoLidas(), 1);
     assert.equal(((await admin.pedir(`/api/reivindicacoes/${id}/mensagens`)).corpo as unknown[]).length, 1);
+    assert.equal(await naoLidas(), undefined, "abrir a conversa marca como lida");
+    assert.equal((await dono.pedir("/api/reivindicacoes/nao-lidas")).corpo.administracao, null);
+    assert.equal((await new Navegador().pedir("/api/reivindicacoes/nao-lidas")).status, 401);
     assert.ok(((await admin.pedir("/api/reivindicacoes")).corpo as { id: number }[]).some((r) => r.id === id));
     assert.ok(((await dono.pedir("/api/reivindicacoes/minhas")).corpo as { id: number }[]).some((r) => r.id === id));
 

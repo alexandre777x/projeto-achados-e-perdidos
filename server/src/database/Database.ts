@@ -40,6 +40,7 @@ export class Database {
       .get();
     if (jaExiste) {
       this.migrarLocalParaTexto();
+      this.migrarLeituraConversa();
       return false;
     }
 
@@ -111,6 +112,39 @@ export class Database {
       this.conexao.pragma("foreign_keys = ON");
     }
     console.log("Banco atualizado: o local dos itens agora é texto livre (cópia de segurança em .antes-local-em-texto.bak).");
+  }
+
+  /**
+   * Migração de 24/10/2026: tabela leitura_conversa, para o contador de mensagens não lidas.
+   * Só acrescenta uma tabela, sem mexer nas outras. As mensagens que já existiam contam
+   * como lidas pelos dois lados, para ninguém receber um monte de avisos antigos de uma vez.
+   * Não faz nada se a tabela já existir.
+   */
+  private migrarLeituraConversa(): void {
+    const existe = this.conexao
+      .prepare("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'leitura_conversa'")
+      .get();
+    if (existe) {
+      return;
+    }
+
+    this.conexao.transaction(() => {
+      this.conexao.exec(`
+        CREATE TABLE leitura_conversa (
+            reivindicacao_id   INTEGER NOT NULL REFERENCES reivindicacao(id) ON DELETE CASCADE,
+            lado               TEXT NOT NULL CHECK (lado IN ('REIVINDICANTE','ADMINISTRACAO')),
+            ultima_mensagem_id INTEGER NOT NULL DEFAULT 0,
+            PRIMARY KEY (reivindicacao_id, lado)
+        );
+
+        INSERT INTO leitura_conversa (reivindicacao_id, lado, ultima_mensagem_id)
+        SELECT m.reivindicacao_id, lados.lado, MAX(m.id)
+        FROM mensagem m
+        CROSS JOIN (SELECT 'REIVINDICANTE' AS lado UNION ALL SELECT 'ADMINISTRACAO') lados
+        GROUP BY m.reivindicacao_id, lados.lado;
+      `);
+    })();
+    console.log("Banco atualizado: contador de mensagens não lidas (as mensagens antigas contam como lidas).");
   }
 
   public contarTabelas(): number {

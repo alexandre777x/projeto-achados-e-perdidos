@@ -57,6 +57,7 @@
     const chips = document.getElementById('chips');
     let todas = [];
     let filtro = '';
+    let naoLidas = {};
 
     function dataHora(texto) {
       return new Date(texto.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -71,6 +72,14 @@
           : 'Retire o objeto na segurança do campus levando um documento com foto.';
       }
       return null; // rejeitada: o motivo aparece no lugar
+    }
+
+    // "2 mensagens novas" no cartão de quem tem mensagem da administração para ler
+    function etiquetaNovas(quantas) {
+      const etiqueta = document.createElement('span');
+      etiqueta.className = 'etiqueta-novas';
+      etiqueta.textContent = quantas === 1 ? '1 mensagem nova' : `${quantas} mensagens novas`;
+      return etiqueta;
     }
 
     function cartao(r) {
@@ -98,6 +107,7 @@
       selo.className = `selo selo-${r.status.toLowerCase()}`;
       selo.textContent = r.status === 'APROVADA' && r.itemStatus === 'DEVOLVIDO' ? 'Devolvido' : ROTULOS[r.status];
       topo.append(titulo, selo);
+      if (naoLidas[r.id]) topo.append(etiquetaNovas(naoLidas[r.id]));
 
       const datas = document.createElement('p');
       datas.className = 'suave reivindicacao-datas';
@@ -149,9 +159,13 @@
       chips.hidden = todas.length === 0;
     }
 
-    api('/reivindicacoes/minhas')
-      .then((reivindicacoes) => {
+    Promise.all([
+      api('/reivindicacoes/minhas'),
+      api('/reivindicacoes/nao-lidas').catch(() => null), // sem a contagem, a lista aparece igual
+    ])
+      .then(([reivindicacoes, contagem]) => {
         todas = reivindicacoes;
+        naoLidas = contagem?.minhas.porReivindicacao ?? {};
         document.getElementById('vazio').hidden = todas.length > 0;
         montarChips();
         mostrarLista();

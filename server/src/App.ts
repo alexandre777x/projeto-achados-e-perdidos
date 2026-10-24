@@ -146,8 +146,9 @@ export class App {
     const c = this.reivindicacaoController;
     this.api.post("/reivindicacoes", this.exigirLogin, this.receberProvas, (req, res) => c.abrir(req, res));
     this.api.get("/reivindicacoes/minhas", this.exigirLogin, (req, res) => c.listarMinhas(req, res));
+    this.api.get("/reivindicacoes/nao-lidas", this.exigirLogin, (req, res) => c.contarNaoLidas(req, res));
     this.api.get("/reivindicacoes", this.exigirAdmin, (req, res) => c.listarAbertas(req, res));
-    // Depois de /minhas, senão "minhas" seria lido como um id.
+    // Depois de /minhas e /nao-lidas, senão esses nomes seriam lidos como um id.
     this.api.get("/reivindicacoes/:id", this.exigirLogin, (req, res) => c.detalhar(req, res));
     this.api.get("/reivindicacoes/:id/provas/:provaId", this.exigirLogin, (req, res) => c.baixarProva(req, res));
     this.api.get("/reivindicacoes/:id/mensagens", this.exigirLogin, (req, res) => c.listarMensagens(req, res));

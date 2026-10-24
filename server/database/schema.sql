@@ -70,6 +70,15 @@ CREATE TABLE mensagem (
     autor_id         INTEGER NOT NULL REFERENCES usuario(id)
 );
 
+-- Até qual mensagem cada lado da conversa já leu: quem reivindicou ou a administração
+-- (qualquer administrador que abre a conversa marca como lida para todos eles).
+CREATE TABLE leitura_conversa (
+    reivindicacao_id   INTEGER NOT NULL REFERENCES reivindicacao(id) ON DELETE CASCADE,
+    lado               TEXT NOT NULL CHECK (lado IN ('REIVINDICANTE','ADMINISTRACAO')),
+    ultima_mensagem_id INTEGER NOT NULL DEFAULT 0,
+    PRIMARY KEY (reivindicacao_id, lado)
+);
+
 CREATE TABLE devolucao (
     id               INTEGER PRIMARY KEY AUTOINCREMENT,
     data_hora        TEXT NOT NULL DEFAULT (datetime('now')),

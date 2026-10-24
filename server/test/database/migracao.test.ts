@@ -119,6 +119,18 @@ describe("migração: local da lista para texto livre", () => {
     assert.ok(logs.some((l) => l.includes("Banco atualizado")));
   });
 
+  test("cria a tabela das mensagens lidas, com as mensagens antigas já lidas pelos dois lados", () => {
+    assert.deepEqual(linhas("SELECT reivindicacao_id, lado, ultima_mensagem_id FROM leitura_conversa ORDER BY lado"), [
+      { reivindicacao_id: 1, lado: "ADMINISTRACAO", ultima_mensagem_id: 1 },
+      { reivindicacao_id: 1, lado: "REIVINDICANTE", ultima_mensagem_id: 1 },
+    ]);
+    assert.ok(logs.some((l) => l.includes("mensagens não lidas")));
+    assert.throws(
+      () => db().prepare("INSERT INTO leitura_conversa (reivindicacao_id, lado) VALUES (1, 'OUTRO')").run(),
+      /CHECK/
+    );
+  });
+
   test("rodar de novo não faz nada (o banco já está no formato novo)", () => {
     const antes = linhas("SELECT * FROM item ORDER BY id");
     logs = [];

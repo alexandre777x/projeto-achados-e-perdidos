@@ -43,6 +43,11 @@ export class ReivindicacaoController {
     res.json(this.servico.listarMinhas(SessaoDaRequisicao.usuarioId(req)));
   }
 
+  /** Contador de mensagens não lidas, para o menu e as listas. */
+  public contarNaoLidas(req: Request, res: Response): void {
+    res.json(this.servico.contarNaoLidas(ReivindicacaoController.solicitante(req)));
+  }
+
   /** Fila da administração (RF04.4) */
   public listarAbertas(req: Request, res: Response): void {
     res.json(this.servico.listarAbertas());

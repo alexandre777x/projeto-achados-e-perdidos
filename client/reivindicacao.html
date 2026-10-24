@@ -291,6 +291,8 @@
         return div;
       }));
       conversa.scrollTop = conversa.scrollHeight; // mostra a mensagem mais nova
+      // Abrir a conversa marca as mensagens como lidas: o número do menu baixa na hora
+      atualizarContadorDeMensagens();
     }
 
     function atualizarConversaSozinha() {

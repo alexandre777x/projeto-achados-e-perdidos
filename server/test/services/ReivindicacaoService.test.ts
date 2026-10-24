@@ -9,6 +9,7 @@ import { ReivindicacaoService } from "../../src/services/ReivindicacaoService";
 import { DevolucaoService } from "../../src/services/DevolucaoService";
 import { contar, criarItem, criarUsuario, prepararBanco, sql, statusDoItem } from "../fabrica";
 import { erroDeNegocio } from "../verificar";
+import { Email } from "../../src/services/EmailService";
 
 prepararBanco();
 const servico = new ReivindicacaoService();
@@ -16,6 +17,12 @@ const adminUsuario = criarUsuario(PerfilUsuario.ADMINISTRADOR);
 const admin = { id: adminUsuario.id, perfil: adminUsuario.perfil };
 const outroAdminUsuario = criarUsuario(PerfilUsuario.ADMINISTRADOR);
 const outroAdmin = { id: outroAdminUsuario.id, perfil: outroAdminUsuario.perfil };
+
+// Os e-mails da decisão ficam guardados aqui em vez de irem para o terminal
+const emails: Email[] = [];
+(servico as unknown as { emailService: { enviar: (e: Email) => Promise<void> } }).emailService.enviar = async (e) => {
+  emails.push(e);
+};
 
 function aluno() {
   const u = criarUsuario(PerfilUsuario.ALUNO);
@@ -235,6 +242,113 @@ describe("mensagens (RF04.3)", () => {
     const r = servico.abrir(item(), "respostas", [], quem);
     assert.throws(() => servico.enviarMensagem(r.getId() as number, "  ", quem), erroDeNegocio(400));
     assert.throws(() => servico.enviarMensagem(r.getId() as number, undefined, quem), erroDeNegocio(400));
+  });
+});
+
+describe("mensagens não lidas", () => {
+  const naoLidasDoAdmin = (id: number, quem = admin) => servico.contarNaoLidas(quem).administracao?.porReivindicacao[id] ?? 0;
+
+  test("mensagem da administração conta para quem reivindicou até ele abrir a conversa", () => {
+    const quem = aluno();
+    const id = servico.abrir(item(), "respostas", [], quem).getId() as number;
+    assert.deepEqual(servico.contarNaoLidas(quem).minhas, { total: 0, porReivindicacao: {} });
+
+    servico.enviarMensagem(id, "Pode descrever?", admin);
+    servico.enviarMensagem(id, "Tem algum adesivo?", outroAdmin);
+    assert.deepEqual(servico.contarNaoLidas(quem).minhas, { total: 2, porReivindicacao: { [id]: 2 } });
+
+    servico.listarMensagens(id, quem);
+    assert.equal(servico.contarNaoLidas(quem).minhas.total, 0);
+  });
+
+  test("mensagem de quem reivindicou conta para a administração; qualquer administrador marca como lida", () => {
+    const quem = aluno();
+    const id = servico.abrir(item(), "respostas", [], quem).getId() as number;
+    servico.enviarMensagem(id, "É meu!", quem);
+    assert.equal(naoLidasDoAdmin(id), 1);
+    assert.equal(naoLidasDoAdmin(id, outroAdmin), 1);
+
+    servico.listarMensagens(id, outroAdmin);
+    assert.equal(naoLidasDoAdmin(id), 0, "lida por um administrador, lida para a administração");
+  });
+
+  test("a própria mensagem nunca conta, e responder marca a conversa como lida", () => {
+    const quem = aluno();
+    const id = servico.abrir(item(), "respostas", [], quem).getId() as number;
+    servico.enviarMensagem(id, "Oi?", admin);
+    servico.enviarMensagem(id, "Oi, é meu", quem);
+    assert.equal(servico.contarNaoLidas(quem).minhas.total, 0, "quem responde já leu");
+    assert.equal(naoLidasDoAdmin(id), 1, "só a resposta do aluno é nova para a administração");
+  });
+
+  test("aluno não recebe contagem da administração", () => {
+    assert.equal(servico.contarNaoLidas(aluno()).administracao, null);
+  });
+
+  test("a reivindicação do próprio administrador conta no lado dele como reivindicante", () => {
+    const id = servico.abrir(item(), "respostas", [], admin).getId() as number;
+    servico.enviarMensagem(id, "Sobre o seu pedido", outroAdmin);
+    assert.equal(servico.contarNaoLidas(admin).minhas.porReivindicacao[id], 1);
+    servico.enviarMensagem(id, "Respondendo", admin);
+    assert.equal(naoLidasDoAdmin(id, admin), 0, "não conta a própria mensagem como da administração");
+    assert.equal(naoLidasDoAdmin(id, outroAdmin), 1, "para o outro administrador é nova");
+  });
+});
+
+describe("e-mail da decisão", () => {
+  test("aprovar avisa quem pediu e quem teve a reivindicação rejeitada junto", () => {
+    const id = item();
+    const dono = criarUsuario();
+    const outro = criarUsuario();
+    const aprovada = servico.abrir(id, "respostas", [], { id: dono.id, perfil: dono.perfil });
+    const rejeitada = servico.abrir(id, "respostas", [], { id: outro.id, perfil: outro.perfil });
+    emails.length = 0;
+
+    servico.aprovar(aprovada.getId() as number, admin.id);
+    assert.deepEqual(emails.map((e) => e.para), [dono.email, outro.email]);
+    assert.match(emails[0].assunto, /aprovada/);
+    assert.match(emails[0].texto, /documento com foto/);
+    assert.match(emails[0].texto, new RegExp(`reivindicacao\\.html\\?id=${aprovada.getId()}`));
+    assert.match(emails[1].assunto, /rejeitada/);
+    assert.match(emails[1].texto, /Outra reivindicação deste item foi aprovada/);
+    assert.match(emails[1].texto, new RegExp(`id=${rejeitada.getId()}`));
+  });
+
+  test("rejeitar avisa com o motivo", () => {
+    const dono = criarUsuario();
+    const r = servico.abrir(item(), "respostas", [], { id: dono.id, perfil: dono.perfil });
+    emails.length = 0;
+    servico.rejeitar(r.getId() as number, admin.id, "As respostas não conferem");
+    assert.equal(emails.length, 1);
+    assert.equal(emails[0].para, dono.email);
+    assert.match(emails[0].texto, /Motivo: As respostas não conferem/);
+  });
+
+  test("decisão recusada não manda e-mail", () => {
+    const r = servico.abrir(item(), "respostas", [], aluno());
+    servico.rejeitar(r.getId() as number, admin.id, "não");
+    emails.length = 0;
+    assert.throws(() => servico.aprovar(r.getId() as number, admin.id), erroDeNegocio(409));
+    assert.equal(emails.length, 0);
+  });
+
+  test("falha no envio não desfaz a decisão", async () => {
+    const envio = (servico as unknown as { emailService: { enviar: (e: Email) => Promise<void> } }).emailService;
+    const enviarOriginal = envio.enviar;
+    const erros: string[] = [];
+    const erroOriginal = console.error;
+    envio.enviar = () => Promise.reject(new Error("SMTP fora do ar"));
+    console.error = (...partes: unknown[]) => erros.push(partes.join(" "));
+    try {
+      const r = servico.abrir(item(), "respostas", [], aluno());
+      const decidida = servico.rejeitar(r.getId() as number, admin.id, "não");
+      assert.equal(decidida.getStatus(), StatusReivindicacao.REJEITADA);
+      await new Promise((resolver) => setImmediate(resolver));
+      assert.match(erros.join("\n"), /SMTP fora do ar/);
+    } finally {
+      envio.enviar = enviarOriginal;
+      console.error = erroOriginal;
+    }
   });
 });
 
