@@ -38,6 +38,10 @@ export interface FiltrosBusca {
   categoriaId: number | null;
   periodo: PeriodoDeDatas;
   palavras: string[];
+  /** Palavras que precisam aparecer no local onde o item foi achado. */
+  palavrasDoLocal: string[];
+  /** Ordem pela data de registro: mais recentes (padrão) ou mais antigos primeiro. */
+  maisAntigosPrimeiro: boolean;
   limite: number;
 }
 
@@ -58,6 +62,7 @@ export class ItemRepository extends Repositorio {
    * RF03.1 a RF03.3: só itens disponíveis, dos registrados mais recentemente para os
    * mais antigos. O período é da data do achado. Cada palavra precisa aparecer no
    * título, na descrição ou no local (texto livre: "cantina" acha "perto da cantina").
+   * O filtro de local procura as palavras dele só no local.
    */
   public buscar(filtros: FiltrosBusca): ItemResumo[] {
     const condicoes = ["i.status = ?", "i.data_achado BETWEEN ? AND ?"];
@@ -68,13 +73,17 @@ export class ItemRepository extends Repositorio {
       valores.push(filtros.categoriaId);
     }
     for (const palavra of filtros.palavras) {
-      // % e _ digitados pelo usuário valem como letra, não como curinga do LIKE
-      const padrao = `%${palavra.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
+      const padrao = ItemRepository.padraoLike(palavra);
       condicoes.push(
         "(i.titulo LIKE ? ESCAPE '\\' OR i.descricao LIKE ? ESCAPE '\\' OR i.local_encontrado LIKE ? ESCAPE '\\')"
       );
       valores.push(padrao, padrao, padrao);
     }
+    for (const palavra of filtros.palavrasDoLocal) {
+      condicoes.push("i.local_encontrado LIKE ? ESCAPE '\\'");
+      valores.push(ItemRepository.padraoLike(palavra));
+    }
+    const ordem = filtros.maisAntigosPrimeiro ? "ASC" : "DESC";
 
     return this.db
       .prepare<(string | number)[], LinhaResumo>(
@@ -83,7 +92,7 @@ export class ItemRepository extends Repositorio {
          FROM item i
          JOIN categoria c ON c.id = i.categoria_id
          WHERE ${condicoes.join(" AND ")}
-         ORDER BY i.data_registro DESC, i.id DESC
+         ORDER BY i.data_registro ${ordem}, i.id ${ordem}
          LIMIT ?`
       )
       .all(...valores, filtros.limite)
@@ -96,6 +105,11 @@ export class ItemRepository extends Repositorio {
         local: linha.local,
         foto: linha.foto ? `/uploads/${linha.foto}` : null,
       }));
+  }
+
+  /** "%palavra%" para o LIKE: % e _ digitados pelo usuário valem como letra, não como curinga. */
+  private static padraoLike(palavra: string): string {
+    return `%${palavra.replace(/[\\%_]/g, (c) => "\\" + c)}%`;
   }
 
   /** RF02.1 e RF02.2: grava o item, as fotos e o primeiro registro do histórico (RN05). */

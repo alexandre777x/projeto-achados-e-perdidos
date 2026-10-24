@@ -27,6 +27,8 @@ export interface ConsultaBusca {
   de?: unknown;
   ate?: unknown;
   q?: unknown;
+  local?: unknown;
+  ordem?: unknown;
   limite?: unknown;
 }
 
@@ -51,22 +53,35 @@ export class ItemService {
   }
 
   /**
-   * RF03.1 a RF03.3, a partir da URL: ?categoria=&de=&ate=&q=&limite=.
-   * O local é texto livre, então entra na busca por palavra-chave (q), não num filtro próprio.
+   * RF03.1 a RF03.3, a partir da URL: ?categoria=&de=&ate=&q=&local=&ordem=&limite=.
+   * O local é texto livre (MR01): o filtro de local procura as palavras digitadas só nele,
+   * e a palavra-chave (q) procura no título, na descrição e no local.
+   * ordem: "recentes" (padrão) ou "antigos", pela data de registro.
    * Devolve no máximo LIMITE_BUSCA itens; quem quiser ver mais refina os filtros.
    */
   public buscar(consulta: ConsultaBusca): ItemResumo[] {
-    const texto = String(consulta.q ?? "").trim();
-    if (texto.length > 100) {
-      throw new ErroDeNegocio("A busca pode ter no máximo 100 caracteres.");
+    const ordem = String(consulta.ordem ?? "recentes");
+    if (ordem !== "recentes" && ordem !== "antigos") {
+      throw new ErroDeNegocio("Ordem inválida: use recentes ou antigos.");
     }
     const limite = consulta.limite === undefined ? ItemService.LIMITE_BUSCA : ItemService.lerId(consulta.limite);
     return this.itemRepo.buscar({
       categoriaId: ItemService.lerFiltroId(consulta.categoria, "Categoria inválida."),
       periodo: new PeriodoDeDatas(consulta.de, consulta.ate),
-      palavras: texto ? texto.split(/\s+/) : [],
+      palavras: ItemService.lerPalavras(consulta.q, "A busca pode ter no máximo 100 caracteres."),
+      palavrasDoLocal: ItemService.lerPalavras(consulta.local, "O filtro de local pode ter no máximo 100 caracteres."),
+      maisAntigosPrimeiro: ordem === "antigos",
       limite: Math.min(limite ?? ItemService.LIMITE_BUSCA, ItemService.LIMITE_BUSCA),
     });
+  }
+
+  /** Separa o texto de um filtro em palavras; vazio vira lista vazia. */
+  private static lerPalavras(valor: unknown, mensagemSeLongo: string): string[] {
+    const texto = String(valor ?? "").trim();
+    if (texto.length > 100) {
+      throw new ErroDeNegocio(mensagemSeLongo);
+    }
+    return texto ? texto.split(/\s+/) : [];
   }
 
   /**

@@ -7,7 +7,7 @@
   <link rel="icon" href="/img/undb.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -54,46 +54,16 @@
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script src="/js/cartao-item.js"></script>
   <script>
     // Últimos itens disponíveis (RF03.1)
-    const rotulos = {
-      AGUARDANDO_RECEBIMENTO: 'Aguardando recebimento',
-      DISPONIVEL: 'Disponível',
-      EM_REIVINDICACAO: 'Em reivindicação',
-      DEVOLVIDO: 'Devolvido',
-    };
-
     api('/itens?limite=4')
       .then(mostrarItens)
       .catch(() => mostrarItens([]));
 
     function mostrarItens(itens) {
-      const grade = document.getElementById('ultimos');
       document.getElementById('ultimos-vazio').hidden = itens.length > 0;
-
-      for (const item of itens) {
-        const cartao = document.createElement('a');
-        cartao.className = 'item';
-        cartao.href = `/item.html?id=${item.id}`;
-
-        // Sem foto: um quadro "Sem foto" no lugar de uma imagem quebrada
-        const foto = document.createElement(item.foto ? 'img' : 'div');
-        foto.className = 'item-foto';
-        if (item.foto) {
-          foto.src = item.foto;
-          foto.alt = '';
-        }
-        const titulo = document.createElement('h3');
-        titulo.textContent = item.titulo;
-        const local = document.createElement('p');
-        local.textContent = item.local;
-        const selo = document.createElement('span');
-        selo.className = `selo selo-${item.status.toLowerCase()}`;
-        selo.textContent = rotulos[item.status];
-
-        cartao.append(foto, titulo, local, selo);
-        grade.append(cartao);
-      }
+      document.getElementById('ultimos').replaceChildren(...itens.map(cartaoDeItem));
     }
   </script>
 </body>

@@ -7,7 +7,7 @@
   <link rel="icon" href="/img/undb.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;800&display=swap">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Plus+Jakarta+Sans:wght@700;800&display=swap">
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
@@ -23,12 +23,23 @@
   </header>
 
   <main>
-    <h1>Itens encontrados</h1>
+    <div class="cabecalho-pagina">
+      <h1>Itens encontrados</h1>
+      <p class="suave">Procure o que você perdeu entre os objetos achados no campus.</p>
+    </div>
 
-    <form class="cartao" id="filtros" role="search">
+    <form class="cartao painel-filtros" id="filtros" role="search">
       <label for="q">Palavra-chave</label>
-      <input type="search" id="q" name="q" maxlength="100" placeholder="Ex.: mochila preta, carregador, cantina">
+      <div class="campo-busca">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" aria-hidden="true">
+          <circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/>
+        </svg>
+        <input type="search" id="q" name="q" maxlength="100" placeholder="Ex.: mochila preta, carregador, cantina">
+      </div>
       <p class="suave dica-campo">Procura no título, na descrição e no lugar onde o item foi encontrado.</p>
+
+      <!-- Categoria rápida: cada chip escolhe a categoria e já busca -->
+      <div class="chips" id="chips" role="group" aria-label="Categoria rápida"></div>
 
       <div class="filtros">
         <div>
@@ -36,6 +47,19 @@
           <select id="categoria" name="categoria">
             <option value="">Todas</option>
           </select>
+        </div>
+        <div>
+          <label for="local">Local / bloco</label>
+          <!-- O local é texto livre (MR01): as sugestões ajudam, mas qualquer texto vale -->
+          <input type="text" id="local" name="local" maxlength="100" list="sugestoes-locais" placeholder="Todos os locais">
+          <datalist id="sugestoes-locais">
+            <option value="Bloco A">
+            <option value="Bloco B">
+            <option value="Biblioteca">
+            <option value="Cantina">
+            <option value="Laboratório">
+            <option value="Estacionamento">
+          </datalist>
         </div>
         <div>
           <label for="de">Achado de</label>
@@ -47,21 +71,50 @@
         </div>
       </div>
 
-      <button type="submit">Buscar</button>
-      <a class="botao botao-claro" href="/itens.html">Limpar filtros</a>
+      <div class="filtros-acoes">
+        <button type="submit">Buscar</button>
+        <a class="botao botao-claro" href="/itens.html">Limpar filtros</a>
+      </div>
     </form>
 
-    <p id="aviso" role="status"></p>
+    <div class="barra-resultados">
+      <p id="aviso" role="status"></p>
+      <label class="ordenar" for="ordem">Ordenar por:
+        <select id="ordem" name="ordem" form="filtros">
+          <option value="">Mais recentes</option>
+          <option value="antigos">Mais antigos</option>
+        </select>
+      </label>
+    </div>
+
     <div class="grade-itens" id="resultados"></div>
+
+    <section class="banner-fim">
+      <div>
+        <h2>Não encontrou o que procurava?</h2>
+        <p>Itens novos são cadastrados todos os dias, então vale voltar mais tarde. Achou algo no campus? Registre para ajudar quem perdeu.</p>
+      </div>
+      <a class="botao botao-destaque" href="/novo-item.html">Registrar item encontrado</a>
+    </section>
   </main>
 
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
+  <script src="/js/cartao-item.js"></script>
   <script>
     // RF03.1 a RF03.4: busca de itens disponíveis com filtros.
-    // Os filtros ficam na URL (?q=&categoria=&de=&ate=), como faz a busca da página inicial.
-    // O local é texto livre: procura-se por ele na palavra-chave.
+    // Os filtros ficam na URL (?q=&categoria=&local=&de=&ate=&ordem=), como faz a busca da página inicial.
     const LIMITE = 60;
+    const FILTROS = ['q', 'categoria', 'local', 'de', 'ate', 'ordem'];
+    // Ícone de cada categoria nos chips; categoria nova, criada pelo administrador, usa o padrão
+    const ICONES = {
+      'Eletrônicos': '📱',
+      'Documentos': '🪪',
+      'Roupas e acessórios': '👕',
+      'Material escolar': '✏️',
+      'Chaves': '🔑',
+      'Outros': '📦',
+    };
     const formulario = document.getElementById('filtros');
     const aviso = document.getElementById('aviso');
     const resultados = document.getElementById('resultados');
@@ -72,34 +125,26 @@
       aviso.className = ehErro ? 'erro' : 'suave';
     }
 
-    function dataBr(data) {
-      return data.split('-').reverse().join('/');
+    function chip(texto, categoriaId) {
+      const botao = document.createElement('button');
+      botao.type = 'button';
+      botao.className = 'chip';
+      botao.textContent = texto;
+      botao.setAttribute('aria-pressed', String((parametros.get('categoria') ?? '') === categoriaId));
+      botao.addEventListener('click', () => {
+        formulario.categoria.value = categoriaId;
+        formulario.requestSubmit();
+      });
+      return botao;
     }
 
-    async function preencherLista(select, rota) {
-      for (const opcao of await api(rota)) select.append(new Option(opcao.nome, opcao.id));
-    }
-
-    function cartao(item) {
-      const link = document.createElement('a');
-      link.className = 'item';
-      link.href = `/item.html?id=${item.id}`;
-
-      // Sem foto: um quadro "Sem foto" no lugar de uma imagem quebrada
-      const foto = document.createElement(item.foto ? 'img' : 'div');
-      foto.className = 'item-foto';
-      if (item.foto) {
-        foto.src = item.foto;
-        foto.alt = '';
-        foto.loading = 'lazy';
-      }
-      const titulo = document.createElement('h3');
-      titulo.textContent = item.titulo;
-      const detalhes = document.createElement('p');
-      detalhes.textContent = `${item.categoria} · ${item.local} · ${dataBr(item.dataAchado)}`;
-
-      link.append(foto, titulo, detalhes);
-      return link;
+    async function carregarCategorias() {
+      const categorias = await api('/referencias/categorias');
+      for (const c of categorias) formulario.categoria.append(new Option(c.nome, c.id));
+      document.getElementById('chips').replaceChildren(
+        chip('Todos', ''),
+        ...categorias.map((c) => chip(`${ICONES[c.nome] ?? '🏷️'} ${c.nome}`, String(c.id)))
+      );
     }
 
     async function buscar() {
@@ -111,16 +156,17 @@
       mostrar('Buscando...');
       try {
         const itens = await api('/itens?' + consulta);
-        resultados.replaceChildren(...itens.map(cartao));
+        resultados.replaceChildren(...itens.map(cartaoDeItem));
+        const soOrdem = [...consulta.keys()].every((nome) => nome === 'ordem');
         if (itens.length === 0) {
           // RF03.4
-          mostrar(consulta.toString()
-            ? 'Nenhum item encontrado com esses filtros. Tente outra palavra ou remova algum filtro.'
-            : 'Nenhum item disponível no momento.');
+          mostrar(soOrdem
+            ? 'Nenhum item disponível no momento.'
+            : 'Nenhum item encontrado com esses filtros. Tente outra palavra ou remova algum filtro.');
         } else if (itens.length >= LIMITE) {
-          mostrar(`Mostrando os ${LIMITE} itens mais recentes. Use os filtros para encontrar o que procura.`);
+          mostrar(`Mostrando ${LIMITE} itens. Use os filtros para encontrar o que procura.`);
         } else {
-          mostrar(itens.length === 1 ? '1 item encontrado.' : `${itens.length} itens encontrados.`);
+          mostrar(itens.length === 1 ? '1 item encontrado' : `${itens.length} itens encontrados`);
         }
       } catch (erro) {
         mostrar(erro.message, true);
@@ -138,15 +184,18 @@
       location.search = novos.toString();
     });
 
+    // Trocar a ordem já refaz a busca
+    document.getElementById('ordem').addEventListener('change', () => formulario.requestSubmit());
+
     (async () => {
       try {
-        await preencherLista(formulario.categoria, '/referencias/categorias');
+        await carregarCategorias();
       } catch (erro) {
         mostrar(erro.message, true);
       }
       // Recoloca no formulário os filtros que vieram na URL
-      for (const nome of ['q', 'categoria', 'de', 'ate']) {
-        if (parametros.has(nome)) formulario[nome].value = parametros.get(nome);
+      for (const nome of FILTROS) {
+        if (parametros.has(nome)) document.getElementById(nome).value = parametros.get(nome);
       }
       buscar();
     })();

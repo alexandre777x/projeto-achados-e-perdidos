@@ -171,6 +171,20 @@ describe("ItemService.buscar (RF03.1 a RF03.3)", () => {
     assert.deepEqual(buscar({ q: "fone mochila" }), []);
   });
 
+  test("filtro de local: procura só no local, todas as palavras", () => {
+    assert.deepEqual(buscar({ local: "bloco a" }), [ids.fone, ids.mochila]);
+    assert.deepEqual(buscar({ local: "BLOCO   corredor" }), [ids.fone]);
+    assert.deepEqual(buscar({ local: "cantina", categoria: "5" }), [ids.chave]);
+    assert.deepEqual(buscar({ local: "preto" }), [], "palavra só da descrição não conta");
+    assert.deepEqual(buscar({ local: "%" }), [], "% é texto");
+    assert.deepEqual(buscar({ local: "  " }), [ids.chave, ids.fone, ids.mochila], "vazio não filtra");
+  });
+
+  test("ordem: mais recentes por padrão, ou mais antigos primeiro", () => {
+    assert.deepEqual(buscar({ ordem: "recentes" }), [ids.chave, ids.fone, ids.mochila]);
+    assert.deepEqual(buscar({ ordem: "antigos" }), [ids.mochila, ids.fone, ids.chave]);
+  });
+
   test("% e _ digitados são texto, não curinga", () => {
     assert.deepEqual(buscar({ q: "%" }), [ids.chave]);
     assert.deepEqual(buscar({ q: "_" }), []);
@@ -197,6 +211,8 @@ describe("ItemService.buscar (RF03.1 a RF03.3)", () => {
   test("entradas inválidas", () => {
     assert.throws(() => servico.buscar({ categoria: "abc" }), erroDeNegocio(400, "categoria"));
     assert.throws(() => servico.buscar({ q: "a".repeat(101) }), erroDeNegocio(400, "100"));
+    assert.throws(() => servico.buscar({ local: "a".repeat(101) }), erroDeNegocio(400, "local"));
+    assert.throws(() => servico.buscar({ ordem: "aleatoria" }), erroDeNegocio(400, "ordem"));
     assert.throws(() => servico.buscar({ de: "2026-10-10", ate: "2026-10-01" }), erroDeNegocio(400, "inicial"));
   });
 });
