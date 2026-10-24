@@ -387,31 +387,6 @@ button:hover,
   gap: 16px;
 }
 
-.item {
-  display: block;
-  background: var(--superficie);
-  border-radius: var(--raio);
-  padding: 16px;
-  text-align: center;
-  color: var(--grafite);
-  text-decoration: none;
-}
-
-.item:hover {
-  outline: 2px solid var(--magenta);
-}
-
-.item h3 {
-  margin: 8px 0 4px;
-  font-size: 1.05rem;
-}
-
-.item p {
-  margin: 0 0 8px;
-  font-size: 0.875rem;
-  color: var(--texto-suave);
-}
-
 /* Detalhes do item */
 .galeria {
   display: grid;
@@ -1704,4 +1679,261 @@ th {
 
 .chips[hidden] {
   display: none;
+}
+
+/* ==========================================================================
+   Administração (admin.html)
+   ========================================================================== */
+/* Título com um botão à direita */
+.cabecalho-com-acao {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.cabecalho-com-acao .botao {
+  margin-top: 4px;
+  border: 1px solid var(--cinza-claro);
+}
+
+/* Números do resumo: cada um com uma faixa de cor no topo */
+.indicadores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+
+.indicador {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 16px 18px;
+  background: var(--cartao);
+  border: 1px solid var(--cinza-claro);
+  border-top: 4px solid var(--cor-indicador, var(--roxo));
+  border-radius: 14px;
+  box-shadow: var(--sombra);
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+a.indicador:hover,
+a.indicador:focus-visible {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-roxa);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  a.indicador {
+    transition: none;
+  }
+
+  a.indicador:hover,
+  a.indicador:focus-visible {
+    transform: none;
+  }
+}
+
+.indicador-numero {
+  font-family: var(--fonte-titulo);
+  font-size: 2rem;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--cor-indicador, var(--roxo));
+}
+
+.indicador-verde {
+  --cor-indicador: var(--sucesso);
+}
+
+.indicador-amarelo {
+  --cor-indicador: var(--alerta);
+}
+
+.indicador-roxo {
+  --cor-indicador: var(--roxo);
+}
+
+.indicador-cinza {
+  --cor-indicador: #6b6475;
+}
+
+.indicadores-relatorio {
+  margin: 16px 0 4px;
+}
+
+/* Seções do painel */
+.secao-admin {
+  padding: 20px;
+  border-radius: 16px;
+  scroll-margin-top: 16px;
+}
+
+.secao-admin > h2 {
+  margin: 0 0 4px;
+  font-size: 1.2rem;
+}
+
+.secao-admin > p.suave {
+  margin: 0 0 4px;
+}
+
+.secao-admin .lista-reivindicacoes {
+  margin-top: 12px;
+}
+
+.lista-vazia {
+  margin: 12px 0 0;
+  padding: 14px;
+  border: 1px dashed var(--cinza-claro);
+  border-radius: 12px;
+  text-align: center;
+}
+
+/* Retirada e reivindicações abertas lado a lado em telas largas */
+.colunas-admin {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0 16px;
+}
+
+@media (max-width: 900px) {
+  .colunas-admin {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Cartão de reivindicação mais enxuto, para as listas do painel */
+.reivindicacao-compacta {
+  grid-template-columns: 56px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+}
+
+.reivindicacao-compacta .item-foto {
+  border-radius: 10px;
+}
+
+.reivindicacao-compacta div.item-foto::before {
+  width: 22px;
+  height: 22px;
+}
+
+.reivindicacao-corpo h3 {
+  margin: 0;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.reivindicacao-compacta .reivindicacao-datas {
+  margin-top: 2px;
+  font-size: 0.82rem;
+}
+
+.reivindicacao-compacta .reivindicacao-acao {
+  padding: 6px 8px 6px 12px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 600px) {
+  .reivindicacao-compacta {
+    grid-template-columns: 48px minmax(0, 1fr);
+  }
+}
+
+/* Itens aguardando recebimento: o cartão tem botões, então não sobe ao passar o mouse */
+.cartao-item-fixo:hover,
+.cartao-item-fixo:focus-within {
+  transform: none;
+  box-shadow: var(--sombra);
+  border-color: var(--cinza-claro);
+}
+
+.cartao-item-fixo h3 a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.cartao-item-fixo h3 a:hover {
+  color: var(--roxo);
+  text-decoration: underline;
+}
+
+.cartao-item-midia .selo-aguardando_recebimento::before {
+  background: #f59e0b;
+}
+
+.cartao-item-botoes {
+  display: grid;
+  gap: 8px;
+  margin-top: auto;
+}
+
+.cartao-item-botoes button {
+  margin: 0;
+  padding: 9px 12px;
+  font-size: 0.88rem;
+}
+
+/* Botão de ação destrutiva: contorno vermelho */
+.botao-perigo {
+  background: #fff;
+  color: var(--perigo);
+  border: 1px solid #f0c9c6;
+}
+
+.botao-perigo:hover {
+  background: #fdecea;
+}
+
+/* Categorias como etiquetas */
+.lista-categorias {
+  list-style: none;
+  margin: 14px 0 0;
+  padding: 0;
+}
+
+.lista-categorias .etiqueta {
+  padding: 6px 14px;
+  font-size: 0.88rem;
+}
+
+/* Tabelas do relatório: cabeçalho com fundo e linhas listradas */
+#secao-relatorio h3 {
+  margin: 20px 0 8px;
+  font-size: 1rem;
+}
+
+#secao-relatorio table {
+  border: 1px solid var(--cinza-claro);
+  border-radius: 12px;
+  border-collapse: separate;
+  border-spacing: 0;
+  overflow: hidden;
+}
+
+#secao-relatorio th {
+  background: #f6f1fd;
+  font-weight: 600;
+}
+
+#secao-relatorio th,
+#secao-relatorio td {
+  padding: 10px 12px;
+}
+
+#secao-relatorio tbody tr:nth-child(even) td {
+  background: #fbfafd;
+}
+
+#secao-relatorio tbody tr:last-child td {
+  border-bottom: none;
 }

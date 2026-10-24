@@ -22,49 +22,78 @@
     </nav>
   </header>
 
-  <main>
-    <h1>Administração</h1>
-    <p><a href="/cadastro.html">Criar conta de administrador ou de outra pessoa</a></p>
-    <section class="cartao">
-      <h2>Aguardando retirada</h2>
-      <p class="suave">Reivindicações aprovadas. Quando a pessoa buscar o objeto, abra e registre a devolução.</p>
-      <ul class="lista-simples" id="lista-pendentes"></ul>
-      <p class="suave" id="pendentes-vazio" hidden>Nenhum item aguardando retirada.</p>
-      <p id="aviso-pendentes" role="status"></p>
-    </section>
+  <main class="main-largo">
+    <div class="cabecalho-pagina cabecalho-com-acao">
+      <div>
+        <h1>Administração</h1>
+        <p class="suave">O que precisa da sua atenção no achados e perdidos.</p>
+      </div>
+      <a class="botao botao-claro" href="/cadastro.html">+ Criar conta</a>
+    </div>
 
-    <section class="cartao">
-      <h2>Reivindicações abertas</h2>
-      <p class="suave">Das mais antigas para as mais novas. Abra para ver as respostas, as provas e conversar.</p>
-      <ul class="lista-simples" id="lista-reivindicacoes"></ul>
-      <p class="suave" id="reivindicacoes-vazio" hidden>Nenhuma reivindicação esperando análise.</p>
-      <p id="aviso-reivindicacoes" role="status"></p>
-    </section>
+    <!-- Resumo: cada número leva à sua seção -->
+    <div class="indicadores">
+      <a class="indicador indicador-verde" href="#secao-retirada">
+        <span class="indicador-numero" id="n-pendentes">–</span>
+        <span>Aguardando retirada</span>
+      </a>
+      <a class="indicador indicador-amarelo" href="#secao-abertas">
+        <span class="indicador-numero" id="n-reivindicacoes">–</span>
+        <span>Reivindicações abertas</span>
+      </a>
+      <a class="indicador indicador-roxo" href="#secao-recebimento">
+        <span class="indicador-numero" id="n-aguardando">–</span>
+        <span>Aguardando recebimento</span>
+      </a>
+      <a class="indicador indicador-cinza" href="#secao-categorias">
+        <span class="indicador-numero" id="n-categorias">–</span>
+        <span>Categorias</span>
+      </a>
+    </div>
 
-    <section class="cartao">
+    <div class="colunas-admin">
+      <section class="cartao secao-admin" id="secao-retirada">
+        <h2>Aguardando retirada</h2>
+        <p class="suave">Reivindicações aprovadas. Quando a pessoa buscar o objeto, abra e registre a devolução.</p>
+        <ul class="lista-reivindicacoes" id="lista-pendentes"></ul>
+        <p class="suave lista-vazia" id="pendentes-vazio" hidden>Nenhum item aguardando retirada.</p>
+        <p id="aviso-pendentes" role="status"></p>
+      </section>
+
+      <section class="cartao secao-admin" id="secao-abertas">
+        <h2>Reivindicações abertas</h2>
+        <p class="suave">Das mais antigas para as mais novas. Abra para ver as respostas, as provas e conversar.</p>
+        <ul class="lista-reivindicacoes" id="lista-reivindicacoes"></ul>
+        <p class="suave lista-vazia" id="reivindicacoes-vazio" hidden>Nenhuma reivindicação esperando análise.</p>
+        <p id="aviso-reivindicacoes" role="status"></p>
+      </section>
+    </div>
+
+    <section class="cartao secao-admin" id="secao-recebimento">
       <h2>Itens aguardando recebimento</h2>
       <p class="suave">Registrados por alunos e professores. Confirme quando o objeto chegar à segurança: só então ele aparece na busca.</p>
-      <div class="grade-itens" id="aguardando"></div>
-      <p class="suave" id="aguardando-vazio" hidden>Nenhum item aguardando recebimento.</p>
       <p id="aviso-aguardando" role="status"></p>
+      <div class="grade-itens" id="aguardando"></div>
+      <p class="suave lista-vazia" id="aguardando-vazio" hidden>Nenhum item aguardando recebimento.</p>
     </section>
 
-    <section class="cartao">
+    <section class="cartao secao-admin" id="secao-categorias">
       <h2>Categorias</h2>
       <p class="suave">São as opções que aparecem no registro e na busca de itens. O local onde o item foi achado é escrito por quem registra.</p>
-      <ul id="lista-categorias"></ul>
+      <ul class="etiquetas lista-categorias" id="lista-categorias"></ul>
       <form id="form-categoria" class="filtros" novalidate>
         <div>
           <label for="nova-categoria">Nova categoria</label>
-          <input type="text" id="nova-categoria" name="nome" required minlength="2" maxlength="80">
+          <input type="text" id="nova-categoria" name="nome" required minlength="2" maxlength="80" placeholder="Ex.: Garrafas e copos">
         </div>
         <button type="submit">Adicionar</button>
       </form>
       <p id="aviso-categoria" role="status"></p>
     </section>
 
-    <section class="cartao">
+    <section class="cartao secao-admin" id="secao-relatorio">
       <h2>Relatório de devoluções</h2>
+      <p class="suave">Escolha um período, ou deixe em branco para ver tudo. O CSV abre direto no Excel.</p>
       <form id="form-relatorio" class="filtros">
         <div>
           <label for="de">De</label>
@@ -79,7 +108,7 @@
       </form>
       <p id="aviso-relatorio" role="status"></p>
       <div id="relatorio" hidden>
-        <p><strong id="resumo"></strong></p>
+        <div class="indicadores indicadores-relatorio" id="resumo"></div>
         <h3>Itens devolvidos</h3>
         <div class="tabela-rolagem"><table id="tabela-devolvidos"></table></div>
         <h3>Itens ainda sob custódia</h3>
@@ -91,41 +120,84 @@
   <script src="/js/api.js"></script>
   <script src="/js/menu.js"></script>
   <script>
-    // Listas de reivindicações: cada linha abre a página da reivindicação
-    function listarReivindicacoes(rota, idLista, idVazio, idAviso, campoData) {
+    function dataHora(texto) {
+      return new Date(texto.replace(' ', 'T') + 'Z').toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    }
+
+    function dataBr(data) {
+      return data.split('-').reverse().join('/');
+    }
+
+    function contar(id, quantos) {
+      document.getElementById(id).textContent = quantos;
+    }
+
+    // Foto do item, ou o quadro "Sem foto" no lugar de uma imagem quebrada
+    function fotoDoItem(url) {
+      const foto = document.createElement(url ? 'img' : 'div');
+      foto.className = 'item-foto';
+      if (url) {
+        foto.src = url;
+        foto.alt = '';
+        foto.loading = 'lazy';
+      }
+      return foto;
+    }
+
+    // Listas de reivindicações: cada cartão abre a página da reivindicação
+    function listarReivindicacoes(rota, opcoes) {
       api(rota)
         .then((reivindicacoes) => {
-          document.getElementById(idVazio).hidden = reivindicacoes.length > 0;
-          document.getElementById(idLista).replaceChildren(...reivindicacoes.map((r) => {
+          contar(opcoes.contador, reivindicacoes.length);
+          document.getElementById(opcoes.vazio).hidden = reivindicacoes.length > 0;
+          document.getElementById(opcoes.lista).replaceChildren(...reivindicacoes.map((r) => {
             const li = document.createElement('li');
             const link = document.createElement('a');
+            link.className = `reivindicacao reivindicacao-compacta reivindicacao-${r.status.toLowerCase()}`;
             link.href = `/reivindicacao.html?id=${r.id}`;
-            link.textContent = `${r.itemTitulo} (item nº ${r.itemId})`;
-            const quem = document.createElement('span');
-            quem.className = 'suave';
-            quem.textContent = `${r.reivindicante} · ${new Date(r[campoData].replace(' ', 'T') + 'Z').toLocaleDateString('pt-BR')}`;
-            li.append(link, quem);
+
+            const corpo = document.createElement('div');
+            corpo.className = 'reivindicacao-corpo';
+            const titulo = document.createElement('h3');
+            titulo.textContent = r.itemTitulo;
+            const quem = document.createElement('p');
+            quem.className = 'suave reivindicacao-datas';
+            quem.textContent = `${r.reivindicante} · item nº ${r.itemId} · ${opcoes.rotuloData} ${dataHora(r[opcoes.campoData])}`;
+            corpo.append(titulo, quem);
+
+            const acao = document.createElement('span');
+            acao.className = 'reivindicacao-acao';
+            acao.textContent = opcoes.acao;
+
+            link.append(fotoDoItem(r.itemFoto), corpo, acao);
+            li.append(link);
             return li;
           }));
         })
         .catch((erro) => {
-          const aviso = document.getElementById(idAviso);
+          const aviso = document.getElementById(opcoes.aviso);
           aviso.textContent = erro.message;
           aviso.className = 'erro';
         });
     }
 
     // RF05.1: aprovadas esperando o dono retirar
-    listarReivindicacoes('/devolucoes/pendentes', 'lista-pendentes', 'pendentes-vazio', 'aviso-pendentes', 'dataDecisao');
+    listarReivindicacoes('/devolucoes/pendentes', {
+      lista: 'lista-pendentes', vazio: 'pendentes-vazio', aviso: 'aviso-pendentes', contador: 'n-pendentes',
+      campoData: 'dataDecisao', rotuloData: 'aprovada em', acao: 'Registrar devolução',
+    });
     // RF04.4: fila de reivindicações para analisar
-    listarReivindicacoes('/reivindicacoes', 'lista-reivindicacoes', 'reivindicacoes-vazio', 'aviso-reivindicacoes', 'dataAbertura');
+    listarReivindicacoes('/reivindicacoes', {
+      lista: 'lista-reivindicacoes', vazio: 'reivindicacoes-vazio', aviso: 'aviso-reivindicacoes', contador: 'n-reivindicacoes',
+      campoData: 'dataAbertura', rotuloData: 'aberta em', acao: 'Analisar',
+    });
 
     // RF02.6: confirmar o recebimento físico ou excluir itens registrados por outros perfis
     const avisoAguardando = document.getElementById('aviso-aguardando');
 
     function avisarAguardando(texto, ehErro) {
       avisoAguardando.textContent = texto;
-      avisoAguardando.className = ehErro ? 'erro' : '';
+      avisoAguardando.className = !texto ? '' : ehErro ? 'erro' : 'aviso-sucesso';
     }
 
     async function carregarAguardando() {
@@ -135,25 +207,46 @@
       ]);
       const nomeCategoria = Object.fromEntries(categorias.map((c) => [c.id, c.nome]));
 
-      const grade = document.getElementById('aguardando');
+      contar('n-aguardando', itens.length);
       document.getElementById('aguardando-vazio').hidden = itens.length > 0;
-      grade.replaceChildren(...itens.map((item) => {
+      document.getElementById('aguardando').replaceChildren(...itens.map((item) => {
         const cartao = document.createElement('div');
-        cartao.className = 'item';
+        cartao.className = 'cartao-item cartao-item-fixo';
 
-        // Sem foto: um quadro "Sem foto" no lugar de uma imagem quebrada
-        const url = item.fotos[0]?.url;
-        const foto = document.createElement(url ? 'img' : 'div');
-        foto.className = 'item-foto';
-        if (url) {
-          foto.src = url;
-          foto.alt = `Foto de ${item.titulo}`;
-        }
+        const midia = document.createElement('div');
+        midia.className = 'cartao-item-midia';
+        const selo = document.createElement('span');
+        selo.className = 'selo selo-aguardando_recebimento';
+        selo.textContent = `nº ${item.id}`;
+        midia.append(fotoDoItem(item.fotos[0]?.url), selo);
+
+        const corpo = document.createElement('div');
+        corpo.className = 'cartao-item-corpo';
         const titulo = document.createElement('h3');
-        titulo.textContent = `${item.titulo} (nº ${item.id})`;
-        const detalhes = document.createElement('p');
-        detalhes.textContent = `${nomeCategoria[item.categoriaId]} · ${item.local} · achado em ${item.dataAchado.split('-').reverse().join('/')}`;
+        const link = document.createElement('a');
+        link.href = `/item.html?id=${item.id}`;
+        link.textContent = item.titulo;
+        titulo.append(link);
 
+        const etiquetas = document.createElement('div');
+        etiquetas.className = 'etiquetas';
+        const categoria = document.createElement('span');
+        categoria.className = 'etiqueta';
+        categoria.textContent = nomeCategoria[item.categoriaId];
+        const local = document.createElement('span');
+        local.className = 'etiqueta etiqueta-local';
+        local.title = item.local;
+        const textoLocal = document.createElement('span');
+        textoLocal.textContent = item.local;
+        local.append(textoLocal);
+        etiquetas.append(categoria, local);
+
+        const data = document.createElement('p');
+        data.className = 'cartao-item-data';
+        data.textContent = `Achado em ${dataBr(item.dataAchado)}`;
+
+        const botoes = document.createElement('div');
+        botoes.className = 'cartao-item-botoes';
         const confirmar = document.createElement('button');
         confirmar.textContent = 'Confirmar recebimento';
         confirmar.addEventListener('click', () => agirSobreItem(
@@ -161,14 +254,16 @@
           `"${item.titulo}" agora está disponível na busca.`));
 
         const excluir = document.createElement('button');
-        excluir.className = 'botao-claro';
+        excluir.className = 'botao-perigo';
         excluir.textContent = 'Excluir';
         excluir.addEventListener('click', () => {
           if (!confirm(`Excluir "${item.titulo}"? As fotos também serão apagadas.`)) return;
           agirSobreItem(() => api(`/itens/${item.id}`, { method: 'DELETE' }), `"${item.titulo}" foi excluído.`);
         });
+        botoes.append(confirmar, excluir);
 
-        cartao.append(foto, titulo, detalhes, confirmar, ' ', excluir);
+        corpo.append(titulo, etiquetas, data, botoes);
+        cartao.append(midia, corpo);
         return cartao;
       }));
     }
@@ -194,8 +289,10 @@
 
       async function carregar() {
         const itens = await api(rota);
+        contar('n-categorias', itens.length);
         lista.replaceChildren(...itens.map((i) => {
           const li = document.createElement('li');
+          li.className = 'etiqueta';
           li.textContent = i.nome;
           return li;
         }));
@@ -209,6 +306,7 @@
           const criado = await api(rota, { method: 'POST', body: { nome: form.nome.value.trim() } });
           form.reset();
           aviso.textContent = `${mensagemCriado}: ${criado.nome}.`;
+          aviso.className = 'aviso-sucesso';
           await carregar();
         } catch (erro) {
           aviso.textContent = erro.message;
@@ -257,6 +355,19 @@
       }
     }
 
+    // Os três números do resumo do relatório
+    function indicador(numero, texto, cor) {
+      const caixa = document.createElement('div');
+      caixa.className = `indicador ${cor}`;
+      const n = document.createElement('span');
+      n.className = 'indicador-numero';
+      n.textContent = numero;
+      const t = document.createElement('span');
+      t.textContent = texto;
+      caixa.append(n, t);
+      return caixa;
+    }
+
     formRelatorio.addEventListener('input', () => {
       document.getElementById('exportar').href = '/api/devolucoes/relatorio.csv?' + periodo();
     });
@@ -267,21 +378,24 @@
       avisoRelatorio.className = '';
       try {
         const r = await api('/devolucoes/relatorio?' + periodo());
-        document.getElementById('resumo').textContent =
-          `${r.devolvidos.length} devolvido(s), ${r.disponiveis.length} ainda sob custódia. ` +
-          `Tempo médio até a devolução: ${r.tempoMedioDias === null ? '—' : r.tempoMedioDias + ' dia(s)'}.`;
+        document.getElementById('resumo').replaceChildren(
+          indicador(r.devolvidos.length, 'Devolvidos', 'indicador-verde'),
+          indicador(r.disponiveis.length, 'Ainda sob custódia', 'indicador-amarelo'),
+          indicador(r.tempoMedioDias === null ? '—' : String(r.tempoMedioDias).replace('.', ','),
+            'Dias em média até a devolução', 'indicador-roxo'),
+        );
         preencherTabela(document.getElementById('tabela-devolvidos'), [
           ['Item', (i) => i.titulo],
           ['Categoria', (i) => i.categoria],
           ['Local', (i) => i.local],
-          ['Devolvido em', (i) => i.dataDevolucao],
-          ['Dias', (i) => i.diasAteDevolucao],
+          ['Devolvido em', (i) => dataHora(i.dataDevolucao)],
+          ['Dias', (i) => String(i.diasAteDevolucao).replace('.', ',')],
         ], r.devolvidos);
         preencherTabela(document.getElementById('tabela-disponiveis'), [
           ['Item', (i) => i.titulo],
           ['Categoria', (i) => i.categoria],
           ['Local', (i) => i.local],
-          ['Registrado em', (i) => i.dataRegistro],
+          ['Registrado em', (i) => dataHora(i.dataRegistro)],
           ['Situação', (i) => situacoes[i.status]],
         ], r.disponiveis);
         document.getElementById('relatorio').hidden = false;
