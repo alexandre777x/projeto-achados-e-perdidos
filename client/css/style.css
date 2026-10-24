@@ -1348,3 +1348,173 @@ th {
 .pagina-acesso h3 {
   letter-spacing: normal;
 }
+
+/* ==========================================================================
+   Página de registro de item (novo-item.html)
+   ========================================================================== */
+.main-largo {
+  max-width: 1120px;
+}
+
+/* Formulário à esquerda e dicas à direita; no celular as dicas descem */
+.layout-registro {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 320px;
+  gap: 20px;
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout-registro {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Cada etapa do formulário, com número numa bolinha */
+.etapa {
+  padding-bottom: 20px;
+  margin-bottom: 20px;
+  border-bottom: 1px solid var(--cinza-claro);
+}
+
+.etapa h2 {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 0 4px;
+  font-size: 1.1rem;
+}
+
+.etapa-numero {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  font-size: 0.9rem;
+  background: var(--roxo-fundo);
+  color: var(--roxo);
+}
+
+.contador {
+  text-align: right;
+}
+
+/* Área das fotos: o campo de arquivo fica invisível por cima dela inteira */
+.area-fotos {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 12px;
+  padding: 28px 16px;
+  text-align: center;
+  border: 2px dashed #cdb4f3;
+  border-radius: 14px;
+  background: linear-gradient(135deg, #faf5ff 0%, #f1f3ff 100%);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.area-fotos:hover,
+.area-fotos:focus-within {
+  border-color: var(--roxo);
+  background: #f3e8ff;
+}
+
+.area-fotos input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.area-fotos-icone {
+  width: 36px;
+  height: 36px;
+  margin-bottom: 4px;
+  background: var(--roxo-texto);
+  -webkit-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 16V4'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3Cpath d='M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3'/%3E%3C/svg%3E") center / contain no-repeat;
+  mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23000' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 16V4'/%3E%3Cpath d='m7 9 5-5 5 5'/%3E%3Cpath d='M4 16v3a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-3'/%3E%3C/svg%3E") center / contain no-repeat;
+}
+
+.area-fotos strong {
+  color: var(--roxo);
+}
+
+.area-fotos .suave {
+  font-size: 0.85rem;
+}
+
+/* Miniaturas das fotos escolhidas */
+.previas {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin: 12px 0 0;
+  padding: 0;
+}
+
+.previas:empty {
+  display: none;
+}
+
+.previas li {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+}
+
+.previas img {
+  width: 100%;
+  aspect-ratio: 1;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--cinza-claro);
+}
+
+.previas span {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+#formulario .botao-largo {
+  padding: 13px 20px;
+  font-size: 1.05rem;
+}
+
+.aviso-sucesso {
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: var(--sucesso-fundo);
+  color: var(--sucesso);
+  font-weight: 500;
+}
+
+/* Cartão de dicas ao lado do formulário */
+.dicas-registro {
+  padding: 20px;
+  border-radius: 16px;
+  background: linear-gradient(160deg, #faf5ff 0%, #ffffff 60%);
+}
+
+.dicas-registro h2 {
+  margin: 0 0 12px;
+  font-size: 1.05rem;
+}
+
+.dicas-registro .vantagens {
+  margin-bottom: 20px;
+  font-size: 0.92rem;
+}
+
+.dicas-registro p {
+  margin: 0;
+  font-size: 0.92rem;
+}

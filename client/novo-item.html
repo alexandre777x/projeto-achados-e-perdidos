@@ -22,41 +22,81 @@
     </nav>
   </header>
 
-  <main>
-    <h1>Registrar item encontrado</h1>
-    <form class="cartao" id="formulario" novalidate>
-      <label for="titulo">Título</label>
-      <input type="text" id="titulo" name="titulo" required minlength="3" maxlength="80"
-             placeholder="Ex.: Garrafa térmica azul">
+  <main class="main-largo">
+    <div class="cabecalho-pagina">
+      <h1>Registrar item encontrado</h1>
+      <p class="suave">Achou algo no campus? Conte o que é e onde estava para ajudar o dono a recuperar.</p>
+    </div>
 
-      <label for="descricao">Descrição</label>
-      <textarea id="descricao" name="descricao" rows="4" required maxlength="1000"
-                placeholder="Cor, marca, estado. Não conte detalhes que só o dono saberia: eles servem para conferir quem reivindica."></textarea>
+    <div class="layout-registro">
+      <form class="cartao painel-filtros" id="formulario" novalidate>
+        <section class="etapa">
+          <h2><span class="etapa-numero">1</span> Sobre o item</h2>
+          <label for="titulo">Título</label>
+          <input type="text" id="titulo" name="titulo" required minlength="3" maxlength="80"
+                 placeholder="Ex.: Garrafa térmica azul">
 
-      <div class="acoes">
-        <div>
+          <label for="descricao">Descrição</label>
+          <textarea id="descricao" name="descricao" rows="4" required maxlength="1000"
+                    placeholder="Cor, marca, estado. Não conte detalhes que só o dono saberia: eles servem para conferir quem reivindica."></textarea>
+          <p class="suave dica-campo contador" id="contador">0/1000</p>
+
           <label for="categoriaId">Categoria</label>
           <select id="categoriaId" name="categoriaId" required>
             <option value="">Escolha...</option>
           </select>
-        </div>
-        <div>
+          <!-- Atalho: cada chip escolhe a categoria no campo acima -->
+          <div class="chips" id="chips" role="group" aria-label="Escolher categoria"></div>
+        </section>
+
+        <section class="etapa">
+          <h2><span class="etapa-numero">2</span> Onde e quando</h2>
+          <label for="local">Onde foi encontrado</label>
+          <!-- O local é texto livre (MR01): as sugestões só adiantam o começo -->
+          <input type="text" id="local" name="local" required minlength="3" maxlength="150" list="sugestoes-locais"
+                 placeholder="Ex.: banco em frente à cantina; Bloco A, sala 104, embaixo da mesa">
+          <datalist id="sugestoes-locais">
+            <option value="Bloco A, ">
+            <option value="Bloco B, ">
+            <option value="Biblioteca, ">
+            <option value="Cantina, ">
+            <option value="Laboratório ">
+            <option value="Estacionamento, ">
+          </datalist>
+          <p class="suave dica-campo">Use um ponto de referência que ajude o dono a reconhecer o lugar.</p>
+
           <label for="dataAchado">Data em que foi encontrado</label>
           <input type="date" id="dataAchado" name="dataAchado" required>
-        </div>
-      </div>
+        </section>
 
-      <label for="local">Onde foi encontrado</label>
-      <input type="text" id="local" name="local" required minlength="3" maxlength="150"
-             placeholder="Ex.: banco em frente à cantina; Bloco A, sala 104, embaixo da mesa">
-      <p class="suave dica-campo">Use um ponto de referência que ajude o dono a reconhecer o lugar.</p>
+        <section class="etapa">
+          <h2><span class="etapa-numero">3</span> Fotos</h2>
+          <!-- O campo de arquivo cobre a área inteira: clicar ou arrastar as fotos funciona -->
+          <div class="area-fotos">
+            <input type="file" id="fotos" name="fotos" accept="image/jpeg,image/png" multiple required
+                   aria-describedby="fotos-dica">
+            <span class="area-fotos-icone" aria-hidden="true"></span>
+            <strong>Clique para escolher ou arraste as fotos aqui</strong>
+            <span class="suave" id="fotos-dica">De 1 a 3 fotos, JPG ou PNG, até 5 MB cada</span>
+          </div>
+          <ul class="previas" id="previas"></ul>
+        </section>
 
-      <label for="fotos">Fotos (de 1 a 3, JPG ou PNG, até 5 MB cada)</label>
-      <input type="file" id="fotos" name="fotos" accept="image/jpeg,image/png" multiple required>
+        <p id="aviso" role="alert"></p>
+        <button type="submit" class="botao-largo">Registrar item</button>
+      </form>
 
-      <p id="aviso" role="alert"></p>
-      <button type="submit">Registrar item</button>
-    </form>
+      <aside class="cartao dicas-registro">
+        <h2>Como registrar bem</h2>
+        <ul class="vantagens">
+          <li>Tire fotos com boa luz, mostrando o item inteiro</li>
+          <li>Na descrição, fale de cor, marca e estado</li>
+          <li>Guarde para você detalhes que só o dono saberia, como o que tem dentro de uma carteira</li>
+        </ul>
+        <h2>Depois de registrar</h2>
+        <p class="suave">Leve o objeto à segurança do campus. Ele aparece na busca assim que a administração confirmar o recebimento.</p>
+      </aside>
+    </div>
   </main>
 
   <script src="/js/api.js"></script>
@@ -65,12 +105,25 @@
     // RF02.1 a RF02.5: registro de item encontrado
     const MAX_FOTOS = 3;
     const TAMANHO_MAXIMO = 5 * 1024 * 1024;
+    const TIPOS_ACEITOS = ['image/jpeg', 'image/png'];
+    // Ícone de cada categoria nos chips; categoria nova, criada pelo administrador, usa o padrão
+    const ICONES = {
+      'Eletrônicos': '📱',
+      'Documentos': '🪪',
+      'Roupas e acessórios': '👕',
+      'Material escolar': '✏️',
+      'Chaves': '🔑',
+      'Outros': '📦',
+    };
     const formulario = document.getElementById('formulario');
     const aviso = document.getElementById('aviso');
+    const chips = document.getElementById('chips');
+    const contador = document.getElementById('contador');
+    const previas = document.getElementById('previas');
 
     function mostrar(texto, ehErro) {
       aviso.textContent = texto;
-      aviso.className = ehErro ? 'erro' : '';
+      aviso.className = texto && !ehErro ? 'aviso-sucesso' : 'erro';
     }
 
     // RF02.4: o calendário não deixa escolher data futura
@@ -82,17 +135,61 @@
     formulario.dataAchado.value = hoje();
 
     // RF02.3: as categorias vêm da lista da administração; o local é escrito por quem achou
+    function marcarChip() {
+      for (const chip of chips.children) {
+        chip.setAttribute('aria-pressed', String(chip.value === formulario.categoriaId.value));
+      }
+    }
+
     api('/referencias/categorias')
       .then((categorias) => {
-        for (const c of categorias) formulario.categoriaId.append(new Option(c.nome, c.id));
+        for (const c of categorias) {
+          formulario.categoriaId.append(new Option(c.nome, c.id));
+          const chip = document.createElement('button');
+          chip.type = 'button';
+          chip.className = 'chip';
+          chip.value = c.id;
+          chip.textContent = `${ICONES[c.nome] ?? '🏷️'} ${c.nome}`;
+          chip.addEventListener('click', () => {
+            formulario.categoriaId.value = c.id;
+            marcarChip();
+          });
+          chips.append(chip);
+        }
+        marcarChip();
       })
       .catch((erro) => mostrar(erro.message, true));
+    formulario.categoriaId.addEventListener('change', marcarChip);
+
+    function contar() {
+      contador.textContent = `${formulario.descricao.value.length}/1000`;
+    }
+    formulario.descricao.addEventListener('input', contar);
+
+    // Miniaturas das fotos escolhidas, para conferir antes de enviar
+    function mostrarPrevias() {
+      for (const img of previas.querySelectorAll('img')) URL.revokeObjectURL(img.src);
+      previas.replaceChildren(...[...formulario.fotos.files].map((foto) => {
+        const item = document.createElement('li');
+        if (TIPOS_ACEITOS.includes(foto.type)) {
+          const img = document.createElement('img');
+          img.src = URL.createObjectURL(foto);
+          img.alt = '';
+          item.append(img);
+        }
+        const nome = document.createElement('span');
+        nome.textContent = foto.name;
+        item.append(nome);
+        return item;
+      }));
+    }
+    formulario.fotos.addEventListener('change', mostrarPrevias);
 
     function conferirFotos(fotos) {
       if (fotos.length === 0) return 'Anexe pelo menos uma foto do item.';
       if (fotos.length > MAX_FOTOS) return `Anexe no máximo ${MAX_FOTOS} fotos.`;
       for (const foto of fotos) {
-        if (!['image/jpeg', 'image/png'].includes(foto.type)) return `${foto.name} não é JPG nem PNG.`;
+        if (!TIPOS_ACEITOS.includes(foto.type)) return `${foto.name} não é JPG nem PNG.`;
         if (foto.size > TAMANHO_MAXIMO) return `${foto.name} passa de 5 MB.`;
       }
       return null;
@@ -111,13 +208,16 @@
       const problemaNasFotos = conferirFotos([...formulario.fotos.files]);
       if (problemaNasFotos) return mostrar(problemaNasFotos, true);
 
-      const botao = formulario.querySelector('button');
+      const botao = formulario.querySelector('button[type="submit"]');
       botao.disabled = true;
       botao.textContent = 'Enviando...';
       try {
         const item = await api('/itens', { method: 'POST', body: new FormData(formulario) });
         formulario.reset();
         formulario.dataAchado.value = hoje();
+        contar();
+        marcarChip();
+        mostrarPrevias();
         mostrar(item.status === 'DISPONIVEL'
           ? `Item nº ${item.id} registrado e já disponível na busca.`
           : `Item nº ${item.id} registrado. Leve o objeto à segurança do campus: ele aparece na busca depois que a administração confirmar o recebimento.`,
