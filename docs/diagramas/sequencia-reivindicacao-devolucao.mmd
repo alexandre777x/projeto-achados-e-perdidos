@@ -1,0 +1,37 @@
+sequenceDiagram
+    actor D as Dono do objeto
+    actor A as Administrador
+    participant T as Telas (item, reivindicação, admin)
+    participant RC as ReivindicacaoController
+    participant RS as ReivindicacaoService
+    participant DS as DevolucaoService
+    participant B as Banco SQLite
+    participant E as EmailService
+    D->>T: abre o item e responde às perguntas de posse
+    T->>RC: POST /api/reivindicacoes (respostas e até 3 provas)
+    RC->>RS: abrir(itemId, respostas, provas, quem)
+    RS->>B: INSERT em reivindicacao e prova_posse
+    RS->>B: item passa para EM_REIVINDICACAO
+    RS-->>T: 201 reivindicação ABERTA
+    loop conversa de validação
+        D->>T: envia mensagem
+        T->>RC: POST /api/reivindicacoes/:id/mensagens
+        A->>T: responde
+    end
+    A->>T: avalia as respostas e as provas
+    alt aprova
+        T->>RC: PATCH /api/reivindicacoes/:id/aprovar
+        RC->>RS: aprovar(id, administradorId)
+        RS->>B: status APROVADA
+        RS->>E: avisa o dono por e-mail
+    else rejeita
+        T->>RC: PATCH /api/reivindicacoes/:id/rejeitar (com motivo)
+        RC->>RS: rejeitar(id, administradorId, motivo)
+        RS->>B: status REJEITADA; o item volta a DISPONIVEL se não houver outra aberta
+        RS->>E: avisa o dono por e-mail
+    end
+    A->>T: entrega o objeto e escolhe o tipo de documento
+    T->>DS: POST /api/devolucoes
+    DS->>DS: confere se existe reivindicação aprovada (RN01)
+    DS->>B: INSERT em devolucao, item passa para DEVOLVIDO
+    DS-->>T: 201 devolução registrada

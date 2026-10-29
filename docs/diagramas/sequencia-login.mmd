@@ -1,0 +1,25 @@
+sequenceDiagram
+    actor U as Usuário
+    participant T as login.html
+    participant C as AutenticacaoController
+    participant S as AutenticacaoService
+    participant R as UsuarioRepository
+    participant B as Banco SQLite
+    U->>T: informa e-mail e senha
+    T->>C: POST /api/auth/login
+    C->>S: entrar(email, senha)
+    S->>R: buscarPorEmail(email)
+    R->>B: SELECT em usuario
+    B-->>R: linha do usuário
+    R-->>S: Usuario
+    S->>S: bcrypt.compare(senha, hash)
+    alt e-mail e senha corretos e conta ativa
+        S-->>C: Usuario
+        C->>C: grava o id na sessão
+        C-->>T: 200 com os dados do usuário
+        T-->>U: abre a página inicial
+    else credenciais inválidas
+        S-->>C: ErroDeNegocio
+        C-->>T: 401 E-mail ou senha inválidos
+        T-->>U: mostra a mensagem de erro
+    end

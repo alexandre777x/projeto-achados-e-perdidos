@@ -1,0 +1,17 @@
+digraph G {
+  rankdir=LR; splines=true; nodesep=0.35; ranksep=1.6; fontname="Helvetica";
+  node [fontname="Helvetica", fontsize=13]; edge [arrowhead=none, color="#4A5B6A"];
+  subgraph cluster_sis { label="Sistema CampusLost"; style="rounded"; color="#12263A"; fontsize=16; fontname="Helvetica-Bold";
+    node [shape=ellipse, style=filled, fillcolor="#FFFFFF", color="#12263A", width=3.1, height=0.62];
+    UC01 [label="UC01 Cadastrar-se"]; UC11 [label="UC11 Recuperar senha"]; UC02 [label="UC02 Entrar e sair do sistema"];
+    UC03 [label="UC03 Registrar item encontrado"]; UC05 [label="UC05 Buscar itens"]; UC06 [label="UC06 Reivindicar item"];
+    UC07 [label="UC07 Conversar sobre a reivindicação"]; UC04 [label="UC04 Confirmar recebimento,\neditar ou excluir item"];
+    UC08 [label="UC08 Avaliar reivindicação"]; UC09 [label="UC09 Registrar devolução"]; UC10 [label="UC10 Gerar relatório de devoluções"];
+  }
+  node [shape=box, style="rounded,filled", fillcolor="#E9A23B", color="#12263A", fontsize=15, width=1.8, height=0.7];
+  V [label="Visitante"]; U [label="Usuário comum\n(aluno ou professor)"]; A [label="Administrador"];
+  V -> UC01; V -> UC11;
+  U -> UC02; U -> UC03; U -> UC05; U -> UC06; U -> UC07;
+  A -> UC02; A -> UC03; A -> UC05; A -> UC07; A -> UC04; A -> UC08; A -> UC09; A -> UC10;
+  {rank=same; V; U; A}
+}

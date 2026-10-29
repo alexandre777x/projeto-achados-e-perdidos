@@ -1,0 +1,30 @@
+sequenceDiagram
+    actor U as Usuário
+    participant T as novo-item.html
+    participant M as UploadMiddleware
+    participant C as ItemController
+    participant S as ItemService
+    participant I as Item (regras)
+    participant R as ItemRepository
+    participant B as Banco SQLite
+    U->>T: preenche título, descrição, categoria, local, data e fotos
+    T->>M: POST /api/itens (formulário com até 3 fotos)
+    M->>M: grava as fotos em uploads/
+    M->>C: requisição com os arquivos
+    C->>S: registrar(dados, fotos, quem)
+    S->>I: valida os campos e a data (não pode ser futura)
+    alt dados válidos
+        S->>I: define o status inicial pelo perfil
+        Note right of I: usuário comum: AGUARDANDO_RECEBIMENTO<br/>administrador: DISPONIVEL
+        S->>R: salvar(item, fotos, histórico)
+        R->>B: INSERT em item, foto e historico_status
+        B-->>R: ok
+        R-->>S: Item
+        S-->>C: Item
+        C-->>T: 201 com o item criado
+        T-->>U: confirma o registro
+    else dados inválidos
+        S-->>C: ErroDeNegocio
+        C-->>T: 400 com a mensagem
+        T-->>U: mostra o erro
+    end
